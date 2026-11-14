@@ -18,6 +18,7 @@ import {
     Spinner,
 } from '@sqlrooms/ui'
 import { Icon } from '../../lib/icons'
+import { executeCommand } from '../../core/commands'
 import { PageContent } from './PageContent'
 
 // ─── TabBar (liste des pages) ─────────────────────────────────────────────────
@@ -183,7 +184,7 @@ function NavBar() {
             </div>
             <div className="flex-none flex gap-2 items-center">
                 {devMode && (
-                    <Button variant="ghost" size="sm" onClick={runAllGroups} disabled={isLoading} title="Tout exécuter">
+                    <Button variant="ghost" size="sm" onClick={() => executeCommand('notebook.runAll')} disabled={isLoading} title="Tout exécuter">
                         <Icon name="play-arrow" size={20} />
                     </Button>
                 )}

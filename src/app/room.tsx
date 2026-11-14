@@ -23,6 +23,7 @@ import { DbEngineModal } from './components/modals/DbEngineModal'
 import { ExportModal, GistTokenModal, GistResultModal, JsonPassphraseModal } from './components/modals/ExportModals'
 import { CellConfigModal } from './components/modals/CellConfigModal'
 import { LoopConfigModal, GroupSettingsModal, ChildGroupModal } from './components/modals/GroupModals'
+import { useCommands } from './hooks/useCommands'
 
 function layoutHasPanel(node: any, key: string): boolean {
     if (!node) return false
@@ -150,6 +151,7 @@ function SidebarControls() {
 
 export function Room() {
     const showLayout = useNotebookStore(s => s.showLayout)
+    useCommands()
 
 
     return (

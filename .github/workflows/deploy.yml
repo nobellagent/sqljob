@@ -51,6 +51,8 @@ jobs:
           cp ihatexcel.ico _site/ 2>/dev/null || true
           cp ihatexcel.svg _site/ 2>/dev/null || true
           cp -r dist-cdn _site/
+          # PWA : service worker + manifeste à la racine du site (scope /)
+          cp -r public/. _site/
 
       # main → racine du site (/)
       - name: Deploy main to /

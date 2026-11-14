@@ -7,6 +7,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iHateXcel - sqljob</title>
     <link rel="icon" href="https://raw.githubusercontent.com/ihatexcel/sqljob/main/ihatexcel.ico" type="image/x-icon">
+    <link rel="manifest" href="./manifest.webmanifest">
+    <meta name="theme-color" content="#0f172a">
     <!-- simple-datatables CSS chargé dynamiquement via CDNManager -->
 
     <!-- iconify chargé localement via npm (évite le blocage COEP) -->
@@ -15,6 +17,16 @@
     -->
     <link rel="stylesheet" href="./dist-cdn/sqljob.css?v=20260306b">
     <script type="module" src="./dist-cdn/sqljob.js?v=20260306b"></script>
+    <script>
+        // PWA : enregistre le service worker (offline après la première visite).
+        if ('serviceWorker' in navigator && window.isSecureContext) {
+            window.addEventListener('load', function () {
+                navigator.serviceWorker.register('./sw.js').catch(function (err) {
+                    console.warn('[sqljob] Service worker non enregistré :', err);
+                });
+            });
+        }
+    </script>
 
     <style>
         /* Simple-datatables dark mode fix */

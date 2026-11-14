@@ -6,6 +6,11 @@
             static currentEngine = 'duckdb-wasm'; // 'duckdb-wasm' | 'ducklings'
             static workerRef = null;
 
+            /** Chemin OPFS de la base persistante. */
+            static PERSISTENT_DB_PATH = 'opfs://sqljob.db';
+            /** true si la base courante est persistée dans OPFS. */
+            static usingPersistence = false;
+
             // Versions et URLs des CDN (chargés dynamiquement selon le moteur)
             static DUCKDB_WASM_VERSION = '1.32.0';
             static DUCKLINGS_VERSION = '1.4.4';
@@ -55,6 +60,7 @@
                     }
 
                     DuckDBManager.duckdbModuleRef = null;
+                    DuckDBManager.usingPersistence = false;
                     DuckDBManager._chartTypesInitialized = false;
                     window.duckdbModule = null;
                     window.ducklingsModule = null;
@@ -127,12 +133,41 @@
                 URL.revokeObjectURL(worker_url);
 
                 await DuckDBManager.dbInstance.instantiate(bundle.mainModule, bundle.pthreadWorker);
+
+                // Persistance OPFS : la base survit au rechargement et à la fermeture
+                // de l'onglet. Nécessite un contexte sécurisé (https/localhost).
+                const canPersist =
+                    typeof window !== 'undefined' &&
+                    window.isSecureContext &&
+                    typeof navigator !== 'undefined' &&
+                    !!navigator.storage?.getDirectory;
+
+                if (canPersist) {
+                    try {
+                        const accessMode = duckdb.DuckDBAccessMode?.READ_WRITE ?? 1;
+                        await DuckDBManager.dbInstance.open({
+                            path: DuckDBManager.PERSISTENT_DB_PATH,
+                            accessMode,
+                        });
+                        DuckDBManager.usingPersistence = true;
+                        onStatus?.('Base persistante OPFS ouverte', 'loading');
+                    } catch (err) {
+                        console.warn('[DuckDBManager] OPFS indisponible, base en mémoire :', err);
+                        DuckDBManager.usingPersistence = false;
+                    }
+                }
+
                 DuckDBManager.connInstance = await DuckDBManager.dbInstance.connect();
 
-                // Installer et charger l'extension excel pour supporter les fichiers xlsx nativement
+                // Extension excel : nécessaire pour les xlsx. En mode hors ligne,
+                // INSTALL échoue sans réseau — on ne bloque pas le démarrage pour autant.
                 onStatus?.('Chargement extension Excel...', 'loading');
-                await DuckDBManager.connInstance.query('INSTALL excel;');
-                await DuckDBManager.connInstance.query('LOAD excel;');
+                try {
+                    await DuckDBManager.connInstance.query('INSTALL excel;');
+                    await DuckDBManager.connInstance.query('LOAD excel;');
+                } catch (err) {
+                    console.warn('[DuckDBManager] extension excel indisponible (hors ligne ?) :', err);
+                }
 
                 onStatus?.('DuckDB WASM prêt', 'success');
 
