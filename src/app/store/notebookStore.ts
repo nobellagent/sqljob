@@ -299,6 +299,7 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
             config: {
                 type: 'panel',
                 id: PanelTypes.enum.main,
+                panel: PanelTypes.enum.main,
             } satisfies LayoutConfig,
             panels: {
                 [PanelTypes.enum.main]: {
@@ -351,7 +352,7 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
         if (isMobile && panel === PanelTypes.enum.data) {
             const dataVisible = isDataPanelVisible()
             const target = dataVisible ? PanelTypes.enum.main : PanelTypes.enum.data
-            roomShellState.layout.setConfig({ type: 'panel', id: target })
+            roomShellState.layout.setConfig({ type: 'panel', id: target, panel: target })
             return
         }
         originalTogglePanel(panel, show)
