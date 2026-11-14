@@ -64,11 +64,13 @@ export function exposeGlobals() {
     })
 }
 
+// Dernière configuration chargée (Gist, JSON, URL). Module-scoped : aucun état
+// applicatif sur `window` — la valeur ne sert qu'à reconstruire le store.
+let loadedConfigSource: unknown = null
+
 // ─── Construction de l'état initial (repris de notebookApp.ts) ───────────────
 function buildInitialState() {
-    const config = (typeof window !== 'undefined' && window._loadedConfig)
-        ? window._loadedConfig
-        : ConfigManager.getDefaultConfig()
+    const config = loadedConfigSource ?? ConfigManager.getDefaultConfig()
 
     const initCell = (cell: any, cellIndex: number) => initializeCell(cell, cellIndex)
 
@@ -417,9 +419,7 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
 
         // Ré-initialise le store depuis une config chargée (ex: après déchiffrement Gist)
         initFromConfig(loadedConfig: unknown) {
-            if (typeof window !== 'undefined') {
-                window._loadedConfig = loadedConfig
-            }
+            loadedConfigSource = loadedConfig
             const newState = buildInitialState()
             set(newState as Partial<NotebookStoreState>)
         },

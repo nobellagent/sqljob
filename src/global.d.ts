@@ -7,7 +7,6 @@ interface Window {
     // Config & Gist
     _pendingEncryptedGist?: string;
     _encryptedSource?: string;
-    _loadedConfig?: unknown;
     GistEncrypt?: unknown;
 
     // DuckDB

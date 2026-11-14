@@ -42,7 +42,6 @@ function AppContent() {
                 window._encryptedSource = loadResult.source || 'gist'
                 setAppState('passphrase')
             } else {
-                window._loadedConfig = loadResult
                 if (loadResult) {
                     initFromConfig(loadResult)
                 }

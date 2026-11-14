@@ -75,7 +75,6 @@ export function GistPassphraseModal({ onUnlocked }: Props) {
             }
 
             const finalConfig = ConfigManager.applyURLParamsToConfig(config)
-            window._loadedConfig = finalConfig
             window._pendingEncryptedGist = null
             window._encryptedSource = null
             initFromConfig(finalConfig)
