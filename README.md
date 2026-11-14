@@ -1,38 +1,37 @@
 # sqljob
 
-A browser-based tool for building shareable ETL pipelines and calculator interfaces — no server, no GAFAM, no cloud dependency.
+Notebook SQL local-first : préparer, analyser et partager des données dans le navigateur — sans serveur, sans compte, sans cloud.
 
-**[Try it →](https://ihatexcel.github.io/sqljob)**
-
----
-
-## Purpose
-
-sqljob is designed for analysts and developers who need to build and share **data processing workflows** ("moulinettes") without relying on cloud infrastructure or proprietary tools.
-
-The typical use case: you write SQL transformations, wire up input parameters, and package the whole thing as a single portable file — a JSON configuration, or a standalone HTML that embeds both the app and the data (Base64-encoded). The recipient opens it in a browser. No login, no server, no Excel.
-
-Use it to build:
-- ETL pipelines that run entirely client-side (DuckDB-WASM)
-- Calculator or simulation interfaces driven by SQL
-- Self-contained data reports shareable as a single HTML file
-- Parameterized notebooks distributed via GitHub Gist (with optional encryption)
+**[Ouvrir l'application →](https://ihatexcel.github.io/sqljob)**
 
 ---
 
-## What it does
+## À quoi ça sert
 
-- Load CSV, Parquet, and Excel files directly into DuckDB
-- Write SQL across multiple notebook pages with grouped, auto-executable cells
-- Generate charts using SQL role syntax: `SELECT date::XAXIS, revenue::BARCHART FROM sales`
-- Build dynamic reports with parameters, conditional groups, and Univer spreadsheet cells
-- Export to standalone HTML (data embedded as Base64), JSON config, or PDF
-- Share via GitHub Gist with optional passphrase encryption
-- Embed as a web component via CDN: `<sqljob-app>`
+sqljob sert à construire et diffuser des **moulinettes** : des enchaînements SQL paramétrés que
+quelqu'un d'autre peut ouvrir et exécuter sans rien installer.
+
+- pipelines ETL entièrement côté client (DuckDB-WASM)
+- interfaces de calcul ou de simulation pilotées par SQL
+- rapports autonomes partageables (HTML/JSON)
+- notebooks paramétrés diffusés par GitHub Gist, avec chiffrement optionnel
 
 ---
 
-## Quick start
+## Fonctionnalités
+
+- Import CSV, Parquet et Excel directement dans DuckDB
+- Notebook multi-pages : groupes, cellules auto-exécutables, conditions, boucles, DAG
+- Graphiques par rôles SQL : `SELECT date::XAXIS, revenue::BARCHART FROM sales`
+- Paramètres, groupes conditionnels, cellules tableur Univer, transformations SQLBlock
+- Export HTML / JSON / Base64 / PDF, partage Gist chiffré (AES-GCM)
+- Intégration en web component : `<sqljob-app>`
+- **Offline** : base DuckDB persistante (OPFS) + PWA (service worker)
+- **Automatisation** : `window.sqljob.commands.execute('notebook.runAll')`
+
+---
+
+## Démarrage
 
 ```bash
 git clone https://github.com/ihatexcel/sqljob.git
@@ -41,57 +40,75 @@ npm install
 npm run dev
 ```
 
-Or use it directly online — no installation needed.
+Ou directement en ligne, sans installation.
 
 ---
 
 ## Stack
 
-| Layer | Technology |
+| Couche | Technologie |
 |---|---|
-| SQL engine | [DuckDB-WASM](https://duckdb.org/docs/api/wasm/overview.html) 1.5.2 |
-| UI framework | React 18 + [sqlrooms](https://sqlrooms.org/) |
-| State | Zustand 5 |
+| Moteur SQL | DuckDB-WASM 1.32.0 (moteur DuckDB 1.5.x) |
+| UI | React 18 + [SQLRooms](https://sqlrooms.org/) 0.29.0 |
+| État | Zustand 5 + Immer |
 | Build | Vite 5 + TypeScript |
-| Styling | Tailwind CSS 4 |
-| Charts | ECharts 5 |
-| Spreadsheet | Univer |
+| Styles | Tailwind CSS 4 |
+| Graphiques | ECharts 5 |
+| Tableur | Univer |
 
 ---
 
-## Development
+## Développement
 
 ```bash
-npm run dev          # dev server (localhost:5173)
-npm run build        # production build → dist/
-npm run dev:cdn      # CDN web-component dev (localhost:5174)
+npm run dev          # serveur de dev (localhost:5173)
+npm run build        # build application → dist/
+npm run build:cdn    # bundle web component → dist-cdn/
+npm run dev:cdn      # dev du web component (localhost:5174)
+
+npm run typecheck    # tsc --noEmit
+npm run lint         # eslint (code nouveau : core, commands, tests)
+npm test             # vitest
+npm run ci           # typecheck + lint + tests
 ```
 
-The CI pipeline (`deploy.yml`) handles the CDN bundle build and GitHub Pages deployment automatically on push to `main`, `beta`, or `claude/dev`.
+La CI (`.github/workflows/ci.yml`) exécute typecheck, lint, tests et build CDN sur chaque push.
+Le déploiement (`deploy.yml`) publie sur GitHub Pages ; la release (`release.yml`) publie sur npm
+au tag `v*` et attache les artefacts.
+
+> Le build CDN consomme ~6 Go de RAM : il est conçu pour tourner en CI, pas sur un poste contraint.
 
 ---
 
-## Project structure
+## Structure
 
 ```
 src/
   app/
-    components/       # React components (panels, cells, modals)
-    store/
-      notebookStore.ts     # Main Zustand store
-      slices/              # Feature slices (cells, execution, export…)
-    room.tsx          # Root layout (RoomShell)
+    components/       # panneaux, cellules, modales
+    hooks/            # useCommands (branchement du registre)
+    store/            # store Zustand + slices
+    room.tsx          # racine RoomShell
+  core/
+    commands.ts       # CommandRegistry (contrat commun)
+    appCommands.ts    # commandes noyau
   lib/
-    DuckDBManager.ts  # DuckDB singleton
-    ConfigManager.ts  # Notebook config (load, save, Gist)
-    EChartSqlParser.ts# SQL → ECharts config
-    CDNManager.ts     # Dynamic CDN library loader
+    DuckDBManager.ts  # moteur DuckDB + OPFS
+    ConfigManager.ts  # config notebook
+    EChartSqlParser.ts
+    SqlBlockService.ts
   web-component/
-    sqljob-app.ts     # <sqljob-app> custom element
+    sqljob-app.ts
+public/
+  sw.js               # service worker (offline)
+  manifest.webmanifest
+tests/                # vitest
 ```
+
+Voir [ARCHITECTURE.md](./ARCHITECTURE.md) pour les règles et les décisions assumées.
 
 ---
 
-## License
+## Licence
 
-AGPL-3.0 — © Théo Nobella-Pichonnier
+AGPL-3.0-or-later — © Théo Nobella-Pichonnier

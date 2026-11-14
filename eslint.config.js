@@ -13,7 +13,7 @@ export default tseslint.config(
     js.configs.recommended,
     ...tseslint.configs.recommended,
     {
-        files: ['src/core/**/*.ts', 'src/lib/commands.ts', 'tests/**/*.ts'],
+        files: ['src/core/**/*.ts', 'tests/**/*.ts'],
         rules: {
             '@typescript-eslint/no-explicit-any': 'off',
             '@typescript-eslint/no-unused-vars': ['error', {argsIgnorePattern: '^_'}],
