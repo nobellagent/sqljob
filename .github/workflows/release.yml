@@ -40,11 +40,15 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
+      - name: Archiver le bundle CDN
+        run: |
+          cd dist-cdn && zip -qr ../dist-cdn.zip . && cd ..
+          ls -lh dist-cdn.zip
+
       - name: Attacher les artefacts à la release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist-cdn/sqljob.js
-            dist-cdn/sqljob.css
+            dist-cdn.zip
           generate_release_notes: true

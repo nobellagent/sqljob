@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.1 — 2026-11-14
+
+- La release attache désormais `dist-cdn.zip` (bundle complet) au lieu des deux fichiers d'entrée :
+  le build étant découpé en chunks, `sqljob.js` seul (31 octets) était inutilisable.
+
 ## 0.2.0 — 2026-11-14
 
 ### Socle
