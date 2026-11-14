@@ -9,9 +9,6 @@
 import type { PivotConfig, PivotField } from '@sqlrooms/pivot'
 import type { RoomShellSliceState } from '@sqlrooms/room-shell'
 import type { SqlEditorSliceState } from '@sqlrooms/sql-editor'
-import type { CellsSliceState } from '@sqlrooms/cells'
-import type { NotebookSliceState } from '@sqlrooms/notebook'
-import type { CanvasSliceState } from '@sqlrooms/canvas'
 
 // ─── Entités métier ────────────────────────────────────────────────────────────
 
@@ -517,7 +514,4 @@ export interface CustomNotebookState {
 export type NotebookStoreState =
     RoomShellSliceState &
     SqlEditorSliceState &
-    CellsSliceState &
-    NotebookSliceState &
-    CanvasSliceState &
     CustomNotebookState

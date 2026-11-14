@@ -11,9 +11,6 @@ import { createRoomShellSlice, createRoomStore, persistSliceConfigs, LayoutConfi
 import type { NotebookStoreState } from './types'
 import { createBaseDuckDbConnector } from '@sqlrooms/duckdb-core'
 import { createSqlEditorSlice, createDefaultSqlEditorConfig } from '@sqlrooms/sql-editor'
-import { createCellsSlice as createSqlroomsCellsSlice, createDefaultCellRegistry } from '@sqlrooms/cells'
-import { createNotebookSlice } from '@sqlrooms/notebook'
-import { createCanvasSlice } from '@sqlrooms/canvas'
 import { DatabaseIcon } from 'lucide-react'
 // Panel components (lazy import safe — utilisés uniquement au rendu, pas à l'évaluation)
 import { NotebookPanel } from '../components/NotebookPanel'
@@ -292,21 +289,20 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
     // === Slice SqlEditor ===
     const sqlEditorState = createSqlEditorSlice({ config: createDefaultSqlEditorConfig() })(set, get, store)
 
-    // === Slice RoomShell : layout mosaic + panels ===
+    // === Slice RoomShell : layout en arbre (modèle 0.29) + panels ===
     const roomShellState = createRoomShellSlice({
         config: { title: 'SQLjob', dataSources: [] },
         connector: duckdbManagerConnector,
         layout: {
             config: {
-                type: 'mosaic',
-                nodes: PanelTypes.enum.main,
+                type: 'panel',
+                id: PanelTypes.enum.main,
             } satisfies LayoutConfig,
             panels: {
                 [PanelTypes.enum.main]: {
                     title: 'Notebook',
                     icon: () => null,
                     component: NotebookPanel,
-                    placement: 'main',
                 },
                 [PanelTypes.enum.data]: {
                     title: 'Sources',
@@ -317,11 +313,6 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
             },
         },
     })(set, get, store)
-
-    // === Slices sqlrooms notebook (requis par SheetsTabBar + Notebook de @sqlrooms/cells / @sqlrooms/notebook) ===
-    const sqlroomsCellsState = createSqlroomsCellsSlice({ cellRegistry: createDefaultCellRegistry() })(set, get, store)
-    const notebookState = createNotebookSlice()(set, get, store)
-    const canvasState = createCanvasSlice()(set, get, store)
 
     const initialState = buildInitialState()
 
@@ -336,13 +327,18 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
     const executionActions = createExecutionSlice(set, get)
     const copyPasteActions = createCopyPasteSlice(set, get)
 
-    // Helper : vérifie si le panneau 'data' est actuellement visible dans le layout
-    function isDataPanelVisible() {
-        const nodes = get().layout?.config?.nodes
-        if (!nodes) return false
-        if (nodes === 'data') return true
-        if (typeof nodes === 'object') return JSON.stringify(nodes).includes('"data"')
+    // Helper : parcourt l'arbre de layout (modèle 0.29) et cherche une clé de panneau
+    function layoutHasPanel(node: any, key: string): boolean {
+        if (!node) return false
+        if (typeof node === 'string') return node === key
+        if (node.type === 'panel') return node.id === key || node.panel === key
+        if (Array.isArray(node.children)) return node.children.some((c: any) => layoutHasPanel(c, key))
+        if (node.root) return layoutHasPanel(node.root, key)
         return false
+    }
+
+    function isDataPanelVisible() {
+        return layoutHasPanel(get().layout?.config, PanelTypes.enum.data)
     }
 
     // Override togglePanel pour mobile (< 768px) :
@@ -352,11 +348,8 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
         const isMobile = typeof window !== 'undefined' && window.innerWidth < 768
         if (isMobile && panel === PanelTypes.enum.data) {
             const dataVisible = isDataPanelVisible()
-            if (dataVisible) {
-                set((s: any) => ({ layout: { ...s.layout, config: { ...s.layout.config, nodes: PanelTypes.enum.main } } }))
-            } else {
-                set((s: any) => ({ layout: { ...s.layout, config: { ...s.layout.config, nodes: PanelTypes.enum.data } } }))
-            }
+            const target = dataVisible ? PanelTypes.enum.main : PanelTypes.enum.data
+            roomShellState.layout.setConfig({ type: 'panel', id: target })
             return
         }
         originalTogglePanel(panel, show)
@@ -365,9 +358,6 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
     return {
         ...sqlEditorState,
         ...roomShellState,
-        ...sqlroomsCellsState,
-        ...notebookState,
-        ...canvasState,
         layout: {
             ...roomShellState.layout,
             togglePanel: mobileTogglePanel,

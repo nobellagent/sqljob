@@ -24,10 +24,13 @@ import { ExportModal, GistTokenModal, GistResultModal, JsonPassphraseModal } fro
 import { CellConfigModal } from './components/modals/CellConfigModal'
 import { LoopConfigModal, GroupSettingsModal, ChildGroupModal } from './components/modals/GroupModals'
 
-function getMosaicLeaves(node: any): string[] {
-    if (!node) return []
-    if (typeof node === 'string') return [node]
-    return [...getMosaicLeaves(node.first), ...getMosaicLeaves(node.second)]
+function layoutHasPanel(node: any, key: string): boolean {
+    if (!node) return false
+    if (typeof node === 'string') return node === key
+    if (node.type === 'panel') return node.id === key || node.panel === key
+    if (Array.isArray(node.children)) return node.children.some((c: any) => layoutHasPanel(c, key))
+    if (node.root) return layoutHasPanel(node.root, key)
+    return false
 }
 
 function DataPanelSidebarButton() {
@@ -36,8 +39,9 @@ function DataPanelSidebarButton() {
     const panels = useBaseRoomShellStore(s => s.layout.panels)
     const initialized = useBaseRoomShellStore(s => s.room.initialized)
 
-    const panel = panels?.['data']
-    const isSelected = useMemo(() => getMosaicLeaves(layoutConfig?.nodes).includes('data'), [layoutConfig])
+    const panelDef = panels?.['data']
+    const panel = typeof panelDef === 'function' ? panelDef({ panelId: 'data' }) : panelDef
+    const isSelected = useMemo(() => layoutHasPanel(layoutConfig, 'data'), [layoutConfig])
 
     if (!panel) return null
     return (
@@ -154,7 +158,7 @@ export function Room() {
                 <div className={`bg-muted/70 flex h-full w-12 flex-col items-center gap-2 px-1 py-4 ${showLayout ? '' : 'hidden'}`}>
                     <SidebarControls />
                 </div>
-                <RoomShell.LayoutComposer tileClassName="p-0" />
+                <RoomShell.LayoutComposer />
                 <RoomShell.LoadingProgress />
                 <RoomShell.CommandPalette />
                 <ChildGroupModal />

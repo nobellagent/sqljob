@@ -16,10 +16,10 @@ import {
     AccordionContent,
     AccordionItem,
     AccordionTrigger,
-    useToast,
     Tooltip,
     TooltipContent,
     TooltipTrigger,
+    toast,
 } from '@sqlrooms/ui'
 import { FolderIcon, FileTextIcon, XIcon, UploadIcon, DatabaseIcon } from 'lucide-react'
 import { useNotebookStore } from '../store/notebookStore'
@@ -74,21 +74,17 @@ function FilesSection() {
 // ─── DataSourcesPanel ─────────────────────────────────────────────────────────
 export const DataSourcesPanel = () => {
     const addRoomFile = useNotebookStore(s => s.addRoomFile)
-    const { toast } = useToast()
 
     async function handleDrop(files: File[]) {
         for (const file of files) {
             try {
                 const tableName = convertToValidColumnOrTableName(file.name)
                 await addRoomFile?.(file, tableName)
-                toast({
-                    title: 'Table créée',
+                toast.success('Table créée', {
                     description: `${file.name} → ${tableName}`,
                 })
             } catch (err) {
-                toast({
-                    variant: 'destructive',
-                    title: 'Erreur',
+                toast.error('Erreur', {
                     description: `Erreur lors du chargement de ${file.name}: ${err}`,
                 })
             }
@@ -98,7 +94,7 @@ export const DataSourcesPanel = () => {
     const togglePanel = useBaseRoomShellStore(s => s.layout.togglePanel)
 
     return (
-        <RoomPanel type="data" showHeader={false} className="flex flex-col h-full overflow-hidden">
+        <RoomPanel showHeader={false} className="flex flex-col h-full overflow-hidden">
             {/* Header custom sans épinglage */}
             <div className="flex items-center justify-between px-3 py-2 bg-secondary/50 shrink-0">
                 <div className="flex items-center gap-2 text-muted-foreground">

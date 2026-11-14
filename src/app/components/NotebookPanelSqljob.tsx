@@ -151,7 +151,7 @@ function PageTab({ page, index, isActive, devMode, activatePage, deletePage, sta
 }
 
 // ─── Navbar ───────────────────────────────────────────────────────────────────
-function NavBar({ onSwitchPanel }: { onSwitchPanel: () => void }) {
+function NavBar() {
     const {
         devMode, isLoading, showLayout,
         openExportModal, runAllGroups, loadConfig
@@ -215,18 +215,7 @@ function NavBar({ onSwitchPanel }: { onSwitchPanel: () => void }) {
                 {isLoading && (
                     <Spinner className="h-4 w-4" />
                 )}
-                {/* Bouton switch vers NotebookPanel sqlrooms natif — devMode uniquement */}
-                {devMode && (
-                    <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={onSwitchPanel}
-                        title="Passer au notebook sqlrooms natif"
-                        className="opacity-60 hover:opacity-100"
-                    >
-                        <Icon name="swap-horiz" size={20} />
-                    </Button>
-                )}
+                {/* Le notebook natif sqlrooms a été retiré — une seule implémentation. */}
             </div>
             <input ref={importJsonRef} type="file" accept=".json" hidden
                 onChange={e => { loadConfig(e); (document.activeElement as HTMLElement)?.blur() }} />
@@ -255,10 +244,10 @@ function StatusBar() {
 }
 
 // ─── NotebookPanelSqljob ──────────────────────────────────────────────────────
-export const NotebookPanelSqljob = ({ onSwitchPanel }: { onSwitchPanel: () => void }) => {
+export const NotebookPanelSqljob = () => {
     return (
         <>
-            <NavBar onSwitchPanel={onSwitchPanel} />
+            <NavBar />
             <main className="flex-1 overflow-auto min-h-0">
                 <PageContent />
             </main>

@@ -16,7 +16,8 @@ import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@sqlrooms/ui'
 import { DuckDBManager } from '../../lib/DuckDBManager'
-import DataTablePaginated from '@sqlrooms/data-table/dist/DataTablePaginated'
+import { quoteParsedRawSqlTableReference } from '@sqlrooms/duckdb'
+import { DataTablePaginated } from '@sqlrooms/data-table'
 import { SqlBlockEditor } from './sqlblock/SqlBlockEditor'
 import { PivotEditor } from '@sqlrooms/pivot'
 import type { PivotConfig, PivotField, PivotQuerySource, PivotSource } from '@sqlrooms/pivot'
@@ -1234,7 +1235,7 @@ const PivotBody: React.FC<PivotBodyProps> = ({ cell }) => {
     const querySource = useMemo((): PivotQuerySource | undefined => {
         if (!selectedTable || !_duckdbTables[selectedTable]) return undefined
         const columns = _duckdbTables[selectedTable].columns
-        return { tableRef: `"${selectedTable}"`, columns }
+        return { tableRef: quoteParsedRawSqlTableReference(`"${selectedTable}"`), columns }
     }, [selectedTable, _duckdbTables])
 
     const source = useMemo((): PivotSource | undefined =>
