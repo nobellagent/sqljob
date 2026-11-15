@@ -37,7 +37,25 @@ export const CELL_BODIES: Record<string, CellBodyComponent> = {
     univerSheet: UniverSheetBody,
 }
 
+/** Types enregistrés à l'exécution par des plugins (hors types du cœur). */
+const pluginBodies: Record<string, CellBodyComponent> = {}
+
+/** Enregistre un corps fourni par un plugin. */
+export function registerCellBody(type: string, component: CellBodyComponent): void {
+    pluginBodies[type] = component
+}
+
+/** Retire un corps fourni par un plugin. */
+export function unregisterCellBody(type: string): void {
+    delete pluginBodies[type]
+}
+
+/** Tous les types de cellule connus (cœur + plugins), triés. */
+export function listCellBodyTypes(): string[] {
+    return [...Object.keys(CELL_BODIES), ...Object.keys(pluginBodies)].sort()
+}
+
 /** Retourne le corps à rendre pour un type de cellule, ou `null` si inconnu. */
 export function getCellBody(type: string): CellBodyComponent | null {
-    return CELL_BODIES[type] ?? null
+    return CELL_BODIES[type] ?? pluginBodies[type] ?? null
 }

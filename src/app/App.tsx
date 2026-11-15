@@ -17,6 +17,7 @@ import { Room } from './room'
 import { GistPassphraseModal } from './components/modals/GistPassphraseModal'
 import { loadProject } from './store/projectPersistence'
 import { useProjectPersistence } from './hooks/useProjectPersistence'
+import { initPlugins } from './plugins/pluginRuntime'
 
 type AppState = 'loading' | 'passphrase' | 'ready'
 
@@ -38,6 +39,10 @@ function AppContent() {
     const initFromConfig = useNotebookStore(s => s.initFromConfig)
 
     useEffect(() => {
+        // Plugins installés : chargés en arrière-plan, un échec n'empêche pas
+        // l'application de démarrer (l'erreur est visible dans l'onglet Plugins).
+        void initPlugins()
+
         // Wiring du templateModal : quand selectTemplate est appelé,
         // déléguer à l'action Zustand du notebookStore
         useTemplateModal.setState({

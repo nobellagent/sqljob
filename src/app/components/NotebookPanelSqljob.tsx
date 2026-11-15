@@ -21,6 +21,7 @@ import { Icon } from '../../lib/icons'
 import { executeCommand } from '../../core/commands'
 import { PageContent } from './PageContent'
 import { DbStatusBadge } from './DbFooter'
+import { PluginsModal } from './modals/PluginsModal'
 
 // ─── TabBar (liste des pages) ─────────────────────────────────────────────────
 function TabBar() {
@@ -166,6 +167,7 @@ function NavBar() {
         loadConfig: s.loadConfig
     })))
     const importJsonRef = useRef<HTMLInputElement>(null)
+    const [pluginsOpen, setPluginsOpen] = useState(false)
     const set = useNotebookStore.setState
 
     return (
@@ -185,6 +187,9 @@ function NavBar() {
             </div>
             <div className="flex-none flex gap-2 items-center">
                 <DbStatusBadge />
+                <Button variant="ghost" size="sm" onClick={() => setPluginsOpen(true)} title="Plugins">
+                    <Icon name="puzzle" size={20} />
+                </Button>
                 {devMode && (
                     <Button variant="ghost" size="sm" onClick={() => executeCommand('notebook.runAll')} disabled={isLoading} title="Tout exécuter">
                         <Icon name="play-arrow" size={20} />
@@ -215,6 +220,7 @@ function NavBar() {
                         </DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
+                <PluginsModal open={pluginsOpen} onOpenChange={setPluginsOpen} />
                 {isLoading && (
                     <Spinner className="h-4 w-4" />
                 )}

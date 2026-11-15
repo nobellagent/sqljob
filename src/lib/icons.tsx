@@ -7,12 +7,13 @@ import {
     Activity, ArrowDown, ArrowLeft, ArrowLeftRight, ArrowRight, ArrowUp,
     ArrowUpDown, BookHeart, BookMarked, Braces, ChartBar, CircleCheck, CirclePlay, ClipboardPaste, Copy, CopyCheck, Database,
     Download, Ellipsis, EllipsisVertical, Eye, FileOutput, FileText, FileType, FolderOpen, FolderPlus,
-    Globe, Lock, Network, Newspaper, Paintbrush, PenLine, Play, Plus, RefreshCw,
+    Globe, Lock, Network, Newspaper, Paintbrush, PenLine, Play, Plus, Puzzle, RefreshCw,
     Save, Settings, Share2, SlidersHorizontal, SquareMousePointer, Table2, Trash2, TrendingUp, X, Zap,
 } from 'lucide-react'
 
 /** Map depuis le nom d'icône material-symbols-light (sans préfixe) vers Lucide */
 const ICON_MAP: Record<string, any> = {
+    'puzzle':                       Puzzle,
     'edit-note':                    PenLine,
     'folder-open':                  FolderOpen,
     'tune':                         SlidersHorizontal,

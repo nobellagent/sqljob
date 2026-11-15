@@ -1,0 +1,23 @@
+{
+  "schema": 1,
+  "updatedAt": "2026-11-15",
+  "blocklist": [],
+  "plugins": [
+    {
+      "id": "hello-cell",
+      "name": "Hello Cell",
+      "description": "Type de cellule d'exemple : affiche un titre et le nombre de lignes reçues.",
+      "version": "1.0.0",
+      "sqljobMinVersion": "0.4.0",
+      "types": [
+        "hello"
+      ],
+      "permissions": [
+        "ui:render"
+      ],
+      "entry": "plugins/hello-cell/hello-cell.mjs",
+      "integrity": "sha256-zt+okTzJ5yo2MtC4YJ12GyMNfL0TdOFeIHRRAfGvcOA=",
+      "size": 1353
+    }
+  ]
+}

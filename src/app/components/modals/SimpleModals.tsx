@@ -9,13 +9,22 @@ import {
     Dialog, DialogContent, DialogHeader, DialogTitle,
 } from '@sqlrooms/ui'
 import { Icon, CellTypeIcon } from '../../../lib/icons'
+import { usePlugins } from '../../plugins/usePlugins'
+import { listPluginTypes } from '../../plugins/pluginTypes'
 
 // ─── Icônes cellules ──────────────────────────────────────────────────────────
 const CellTypeGrid = memo(function CellTypeGrid({ onSelect }: { onSelect: (type: string) => void }) {
     const cellTypes = useNotebookStore(s => s.cellTypes)
+    // Re-rendu à chaque installation/désinstallation : les types de plugin
+    // apparaissent et disparaissent sans recharger la page.
+    usePlugins()
+    const allTypes = [
+        ...cellTypes,
+        ...listPluginTypes().map(t => ({ type: t.type, label: t.title, icon: 'puzzle' })),
+    ]
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            {cellTypes.map(ct => (
+            {allTypes.map(ct => (
                 <Button
                     key={ct.type}
                     variant="outline"
