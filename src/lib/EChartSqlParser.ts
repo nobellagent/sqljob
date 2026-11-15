@@ -13,7 +13,6 @@ import {_detectChartType, parseColumnRoles} from './echart/roles'
 
 export type {ColumnRole, ParsedColumnRoles} from './echart/roles'
 export {parseColumnRoles} from './echart/roles'
-export {buildKpiHtml} from './echart/kpi'
 export {buildTableColumnRenderers, getTableColumnDisplayNames} from './echart/table'
 export const buildEChartsOption = _buildEChartsOption
 
@@ -26,4 +25,3 @@ export class EChartSqlParser {
     static detectChartType = _detectChartType;
 }
 
-export default EChartSqlParser

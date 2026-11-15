@@ -1,5 +1,5 @@
 import { produce } from 'immer'
-import { getGroupInDraft } from '../mutations'
+import { getGroupInState } from '../mutations'
 
 /** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
 const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
@@ -172,7 +172,7 @@ export const createCopyPasteSlice = (
                 cellData.name = get()._makeUniqueName(cellData.name, usedNames)
             }
             set((state: any) => immer(state, (draft: any) => {
-                const group = getGroupInDraft(draft, path)
+                const group = getGroupInState(draft, path)
                 if (!group) return
                 cellData._order = get().getNextOrder(group)
                 if (!group.cells) group.cells = []
@@ -183,7 +183,7 @@ export const createCopyPasteSlice = (
             const groupData = JSON.parse(JSON.stringify(clipItem.data))
             get()._prepareGroupForPaste(groupData, usedNames)
             set((state: any) => immer(state, (draft: any) => {
-                const group = getGroupInDraft(draft, path)
+                const group = getGroupInState(draft, path)
                 if (!group) return
                 groupData._order = get().getNextOrder(group)
                 if (!group.children) group.children = []

@@ -10,7 +10,7 @@ import { produce } from 'immer'
 
 /** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
 const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
-import { getCellInDraft, getGroupInDraft } from '../mutations'
+import { getCellInState, getGroupInState } from '../mutations'
 
 export const createCellsSlice = (
     set: StoreApi<NotebookStoreState>['setState'],
@@ -86,7 +86,7 @@ return newCell
         const path = Array.isArray(pathOrIndex) ? pathOrIndex : [pathOrIndex]
         const newCell = get().createNewCell(cellType)
         set((state: any) => immer(state, (draft: any) => {
-            const group = getGroupInDraft(draft, path)
+            const group = getGroupInState(draft, path)
             if (group) {
                 if (!group.cells) group.cells = []
                 newCell._order = get().getNextOrder(group)
@@ -129,7 +129,7 @@ return newCell
         const path = Array.isArray(pathOrIndex) ? pathOrIndex : [pathOrIndex]
         const newCell = get().createNewCell(cellType)
         set((state: any) => immer(state, (draft: any) => {
-            const group = getGroupInDraft(draft, path)
+            const group = getGroupInState(draft, path)
             if (group) {
                 if (!group.cells) group.cells = []
                 newCell._order = get().getNextOrder(group)
@@ -169,7 +169,7 @@ return newCell
                     delete _tables[cell._id]
                 }
                 set((state: any) => immer(state, (draft: any) => {
-                    const target = getGroupInDraft(draft, path)
+                    const target = getGroupInState(draft, path)
                     if (target?.cells) target.cells.splice(cellIndex, 1)
                 }))
                 if (cell.type === 'source') await get().refreshDuckdbTables()
@@ -256,7 +256,7 @@ return newCell
         if (!current) return
         _rawTableDataStore.delete(current._id)
         set((state: any) => immer(state, (draft: any) => {
-        const cell = getCellInDraft(draft, path, cellIndex)
+        const cell = getCellInState(draft, path, cellIndex)
         if (!cell) return
 
         cell._results = null

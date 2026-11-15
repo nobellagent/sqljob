@@ -37,7 +37,6 @@ export function getGroupInState(state: AnyState, path: number[] | undefined): an
 }
 
 /** Alias lisible quand la fonction s'applique à un brouillon immer. */
-export const getGroupInDraft = getGroupInState
 
 /** Cellule visée par un chemin de groupe et un index. */
 export function getCellInState(state: AnyState, path: number[] | undefined, cellIndex: number): any | null {
@@ -67,7 +66,6 @@ export function getCellByIdInState(state: AnyState, cellId: string): any | null 
 }
 
 /** Alias lisible quand la fonction s'applique à un brouillon immer. */
-export const getCellByIdInDraft = getCellByIdInState
 
 /**
  * Copie de travail d'une cellule pour une exécution asynchrone.
@@ -90,7 +88,6 @@ export function commitCellInState(state: AnyState, cell: any): AnyState {
 }
 
 /** Alias lisible quand la fonction s'applique à un brouillon immer. */
-export const getCellInDraft = getCellInState
 
 /**
  * Applique `mutator` à une cellule.
@@ -173,7 +170,6 @@ export function getGroupByIdInState(state: AnyState, groupId: string): any | nul
 }
 
 /** Alias lisible quand la fonction s'applique à un brouillon immer. */
-export const getGroupByIdInDraft = getGroupByIdInState
 
 /** Applique `mutator` au groupe portant cet `_id`. */
 export function updateGroupByIdInState(

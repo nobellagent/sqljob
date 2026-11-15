@@ -3,7 +3,7 @@ import { ConfigManager } from '../../../lib/ConfigManager'
 import { useConfirmModal } from '../uiStores'
 import type { NotebookStoreState } from '../types'
 import { produce } from 'immer'
-import { getCellInDraft, getGroupInDraft } from '../mutations'
+import { getCellInState, getGroupInState } from '../mutations'
 
 /** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
 const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
@@ -130,7 +130,7 @@ export const createGroupsSlice = (
         firstCell._order = 0
         newChild.cells = [firstCell]
         set((state: any) => immer(state, (draft: any) => {
-            const group = getGroupInDraft(draft, path)
+            const group = getGroupInState(draft, path)
             if (!group) return
             if (!group.children) group.children = []
             newChild._order = get().getNextOrder(group)
@@ -149,7 +149,7 @@ export const createGroupsSlice = (
         const group = get().getGroupAtPath(path)
         if (group) {
             set((state: any) => immer(state, (draft: any) => {
-                const g = getGroupInDraft(draft, path)
+                const g = getGroupInState(draft, path)
                 if (!g) return
                 if (!g.loop) g.loop = { enabled: false, query: '', zip: false, zipQuery: '' }
                 else if (g.loop.zip === undefined) {
@@ -167,7 +167,7 @@ export const createGroupsSlice = (
             // `ensureGroupQueries` crée la requête « main » si elle manque :
             // à faire dans un brouillon, l'état étant gelé.
             set((state: any) => immer(state, (draft: any) => {
-                const g = getGroupInDraft(draft, path)
+                const g = getGroupInState(draft, path)
                 if (g) ConfigManager.ensureGroupQueries(g)
             }))
             set({ groupSettingsModal: { open: true, path } })
@@ -223,7 +223,7 @@ FROM source1 LIMIT 10;`
             if (path.length === 1) {
                 draft.pages[draft.activePageIndex].groups.splice(path[0], 1)
             } else {
-                const parent = getGroupInDraft(draft, path.slice(0, -1))
+                const parent = getGroupInState(draft, path.slice(0, -1))
                 if (parent?.children) parent.children.splice(path[path.length - 1], 1)
             }
         }))
@@ -256,7 +256,7 @@ FROM source1 LIMIT 10;`
                 if (!page) return
                 if (!page.linkGroups) page.linkGroups = []
                 page.linkGroups.push(childGroup)
-                const target = getCellInDraft(draft, path, cellIndex)
+                const target = getCellInState(draft, path, cellIndex)
                 if (target) target.childGroupId = childGroup._id
             }))
         }
@@ -302,7 +302,7 @@ FROM source1 LIMIT 10;`
             const parentPath = path.slice(0, -1)
             const childIndex = path[path.length - 1]
             set((state: any) => immer(state, (draft: any) => {
-                const parent = getGroupInDraft(draft, parentPath)
+                const parent = getGroupInState(draft, parentPath)
                 if (!parent?.children) return
                 const newIndex = childIndex + direction
                 if (newIndex < 0 || newIndex >= parent.children.length) return
@@ -315,7 +315,7 @@ FROM source1 LIMIT 10;`
 
     moveCellInGroupAtPath(path: any, cellIndex: number, direction: number) {
         set((state: any) => immer(state, (draft: any) => {
-            const group = getGroupInDraft(draft, path)
+            const group = getGroupInState(draft, path)
             if (!group?.cells) return
             const newIndex = cellIndex + direction
             if (newIndex < 0 || newIndex >= group.cells.length) return
@@ -382,7 +382,7 @@ FROM source1 LIMIT 10;`
         set((state: any) => immer(state, (draft: any) => {
             const group = (!path || path.length === 0)
                 ? { children: draft.pages[draft.activePageIndex]?.groups || [] }
-                : getGroupInDraft(draft, path)
+                : getGroupInState(draft, path)
             if (!group) return
 
             const allItems = get().getAllItemsSorted(group)

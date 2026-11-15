@@ -1,5 +1,5 @@
 import { produce } from 'immer'
-import { getCellByIdInDraft } from '../mutations'
+import { getCellByIdInState } from '../mutations'
 import { cloneCellForExecution, commitCellInState } from '../mutations'
 
 /** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
@@ -22,7 +22,7 @@ export const createFilesSlice = (
         const cell = get().getCellAtPath(path, cellIndex)
         if (!cell || cell.type !== 'source') return
         set((state: any) => immer(state, (draft: any) => {
-            const target = getCellByIdInDraft(draft, cell._id)
+            const target = getCellByIdInState(draft, cell._id)
             if (target) target._isDragging = false
         }))
         const files = e.dataTransfer.files
@@ -242,7 +242,7 @@ export const createFilesSlice = (
         if (fileInput) fileInput.value = ''
 
         set((state: any) => immer(state, (draft: any) => {
-            const target = getCellByIdInDraft(draft, cell._id)
+            const target = getCellByIdInState(draft, cell._id)
             if (!target) return
             target._fileName = ''
             target._currentFile = null
@@ -270,7 +270,7 @@ export const createFilesSlice = (
         const cell = get().getCellAtPath(path, cellIndex)
         if (!cell || cell.type !== 'publipostageWord') return
         set((state: any) => immer(state, (draft: any) => {
-            const target = getCellByIdInDraft(draft, cell._id)
+            const target = getCellByIdInState(draft, cell._id)
             if (target) target._isDragging = false
         }))
         const files = e.dataTransfer.files
@@ -292,7 +292,7 @@ export const createFilesSlice = (
             const arrayBuffer = await file.arrayBuffer()
             const base64 = FileHandler.arrayBufferToBase64(arrayBuffer)
             set((state: any) => immer(state, (draft: any) => {
-                const target = getCellByIdInDraft(draft, cell._id)
+                const target = getCellByIdInState(draft, cell._id)
                 if (!target) return
                 target.docxTemplateBase64 = base64
                 target.docxTemplateFileName = file.name
@@ -327,7 +327,7 @@ export const createFilesSlice = (
         if (fileInput) fileInput.value = ''
 
         set((state: any) => immer(state, (draft: any) => {
-            const target = getCellByIdInDraft(draft, cell._id)
+            const target = getCellByIdInState(draft, cell._id)
             if (!target) return
             target.docxTemplateBase64 = null
             target.docxTemplateFileName = ''
