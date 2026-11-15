@@ -4,17 +4,14 @@ import type {CommandContext, CommandHistory} from '../../core/commands'
 import {registerAppCommands} from '../../core/appCommands'
 import {useNotebookStore} from '../store/notebookStore'
 import type {NotebookPage} from '../store/types'
+import {sanitizeForStorage} from '../store/serializeProject'
 import {DuckDBManager} from '../../lib/DuckDBManager'
 
 const UNDO_LIMIT = 25
 
-/** Copie profonde robuste : `structuredClone` échoue sur les `File` d'un notebook. */
+/** Copie profonde stockable : les cellules portent des refs DOM non clonables. */
 function clonePages(pages: NotebookPage[]): NotebookPage[] {
-    try {
-        return structuredClone(pages)
-    } catch {
-        return JSON.parse(JSON.stringify(pages)) as NotebookPage[]
-    }
+    return sanitizeForStorage(pages) as NotebookPage[]
 }
 
 /**

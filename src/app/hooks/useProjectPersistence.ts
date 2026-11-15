@@ -1,6 +1,7 @@
 import {useEffect} from 'react'
 import {useNotebookStore} from '../store/notebookStore'
 import {saveProject} from '../store/projectPersistence'
+import {serializeForStorage} from '../store/serializeProject'
 
 const DEBOUNCE_MS = 600
 
@@ -30,12 +31,11 @@ export function useProjectPersistence(enabled: boolean): void {
 
             let serialized: string
             try {
-                serialized = JSON.stringify(pages)
+                serialized = serializeForStorage(pages)
             } catch {
-                // Document non sérialisable (référence circulaire) : on n'écrit pas.
                 return
             }
-            if (serialized === lastSaved) return
+            if (!serialized || serialized === lastSaved) return
 
             writing = true
             const ok = await saveProject(pages)

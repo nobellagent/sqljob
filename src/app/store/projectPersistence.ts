@@ -10,6 +10,7 @@
  * ne tient pas un notebook avec des dizaines de cellules et leurs résultats.
  */
 import type {NotebookPage} from './types'
+import {sanitizeForStorage} from './serializeProject'
 
 const DB_NAME = 'sqljob'
 const DB_VERSION = 1
@@ -73,7 +74,8 @@ export async function saveProject(pages: NotebookPage[]): Promise<boolean> {
         const payload: StoredProject = {
             version: 1,
             updatedAt: new Date().toISOString(),
-            pages,
+            // Les cellules contiennent des références DOM non stockables.
+            pages: sanitizeForStorage(pages) as NotebookPage[],
         }
         await tx('readwrite', store => store.put(payload, KEY))
         return true
