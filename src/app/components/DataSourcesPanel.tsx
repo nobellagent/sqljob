@@ -8,6 +8,7 @@
  * - Arborescence des tables DuckDB (TableStructurePanel)
  */
 import { RoomPanel, useBaseRoomShellStore } from '@sqlrooms/room-shell'
+import { DbFooter } from './DbFooter'
 import { TableStructurePanel } from '@sqlrooms/sql-editor'
 import { FileDropzone } from '@sqlrooms/dropzone'
 import { convertToValidColumnOrTableName } from '@sqlrooms/utils'
@@ -148,6 +149,8 @@ export const DataSourcesPanel = () => {
             <div className="flex-1 overflow-auto">
                 <TableStructurePanel />
             </div>
+
+            <DbFooter />
         </RoomPanel>
     )
 }
