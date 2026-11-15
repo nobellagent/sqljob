@@ -156,9 +156,10 @@ export const createHelpersSlice = (
             for (const group of (groups || [])) {
                 const ifQuery = ConfigManager.getGroupIfQuery(group)
                 if (ifQuery) {
-                    group._ifQueryResult = await get().evaluateGroupIfQuery(group)
+                    const ifResult = await get().evaluateGroupIfQuery(group)
+                    get().updateGroupById(group._id, (g: any) => { g._ifQueryResult = ifResult })
                 } else {
-                    group._ifQueryResult = true
+                    get().updateGroupById(group._id, (g: any) => { g._ifQueryResult = true })
                 }
                 if (group.children?.length) await evaluateRecursive(group.children)
             }

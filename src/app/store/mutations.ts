@@ -151,3 +151,39 @@ export function updateCellByIdInState(
         }
     })
 }
+
+/** Groupe portant cet `_id`, où qu'il soit dans le document. */
+export function getGroupByIdInState(state: AnyState, groupId: string): any | null {
+    const visit = (group: any): any => {
+        if (!group) return null
+        if (group._id === groupId) return group
+        for (const child of group.children ?? []) {
+            const nested = visit(child)
+            if (nested) return nested
+        }
+        return null
+    }
+    for (const page of state.pages ?? []) {
+        for (const group of [...(page.groups ?? []), ...(page.linkGroups ?? [])]) {
+            const found = visit(group)
+            if (found) return found
+        }
+    }
+    return null
+}
+
+/** Alias lisible quand la fonction s'applique à un brouillon immer. */
+export const getGroupByIdInDraft = getGroupByIdInState
+
+/** Applique `mutator` au groupe portant cet `_id`. */
+export function updateGroupByIdInState(
+    state: AnyState,
+    groupId: string,
+    mutator: (group: any) => void
+): AnyState {
+    if (!getGroupByIdInState(state, groupId)) return state
+    return produce(state, (draft: AnyState) => {
+        const group = getGroupByIdInState(draft, groupId)
+        if (group) mutator(group)
+    })
+}

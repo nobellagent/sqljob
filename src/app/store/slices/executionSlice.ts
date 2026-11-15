@@ -151,7 +151,7 @@ export const createExecutionSlice = (
         if (ConfigManager.getGroupIfQuery(group)) {
             get().setStatus('Évaluation de la condition ifQuery...', 'loading')
             const ifQueryResult = await get().evaluateGroupIfQuery(group)
-            group._ifQueryResult = ifQueryResult
+            get().updateGroupById(group._id, (g: any) => { g._ifQueryResult = ifQueryResult })
 
             if (!ifQueryResult) {
                 get().setStatus('Groupe ignoré (ifQuery = false)', 'info')
@@ -222,7 +222,7 @@ export const createExecutionSlice = (
         if (ConfigManager.getGroupIfQuery(group)) {
             get().setStatus('Évaluation de la condition ifQuery...', 'loading')
             const ifQueryResult = await get().evaluateGroupIfQuery(group)
-            group._ifQueryResult = ifQueryResult
+            get().updateGroupById(group._id, (g: any) => { g._ifQueryResult = ifQueryResult })
 
             if (!ifQueryResult) {
                 get().setStatus('Groupe ignoré (ifQuery = false)', 'info')
@@ -1442,7 +1442,7 @@ export const createExecutionSlice = (
         if (ConfigManager.getGroupIfQuery(group)) {
             get().setStatus('Évaluation de la condition ifQuery...', 'loading')
             const ifQueryResult = await get().evaluateGroupIfQuery(group)
-            group._ifQueryResult = ifQueryResult
+            get().updateGroupById(group._id, (g: any) => { g._ifQueryResult = ifQueryResult })
 
             if (!ifQueryResult) {
                 get().setStatus('Groupe ignoré (ifQuery = false)', 'info')

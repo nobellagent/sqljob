@@ -82,6 +82,8 @@ export interface CustomNotebookState {
     closeCellConfig: () => void
     /** Applique un mutateur immer à une cellule ciblée par chemin + index. */
     updateCellAt: (path: number[], cellIndex: number, mutator: (cell: any) => void) => void
+    /** Applique un mutateur immer au groupe portant cet identifiant. */
+    updateGroupById: (groupId: string, mutator: (group: any) => void) => void
     /** Applique un mutateur immer à un groupe ciblé par chemin. */
     updateGroupAt: (path: number[], mutator: (group: any) => void) => void
     /** Applique un mutateur immer à la cellule portant cet identifiant. */

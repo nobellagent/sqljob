@@ -8,7 +8,7 @@
  */
 import type { StoreApi } from 'zustand'
 import type { NotebookStoreState } from '../types'
-import { updateCellByIdInState, updateCellInState, updateGroupInState } from '../mutations'
+import { updateCellByIdInState, updateCellInState, updateGroupByIdInState, updateGroupInState } from '../mutations'
 
 export function createUpdateSlice(
     set: StoreApi<NotebookStoreState>['setState'],
@@ -18,6 +18,11 @@ export function createUpdateSlice(
         /** Applique `mutator` à la cellule `cellIndex` du groupe situé à `path`. */
         updateCellAt(path: number[], cellIndex: number, mutator: (cell: any) => void) {
             set((state: any) => updateCellInState(state, path, cellIndex, mutator) as Partial<NotebookStoreState>)
+        },
+
+        /** Applique `mutator` au groupe portant `_id`, où qu'il soit. */
+        updateGroupById(groupId: string, mutator: (group: any) => void) {
+            set((state: any) => updateGroupByIdInState(state, groupId, mutator) as Partial<NotebookStoreState>)
         },
 
         /** Applique `mutator` au groupe situé à `path`. */

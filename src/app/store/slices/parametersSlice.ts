@@ -175,7 +175,8 @@ export const createParametersSlice = (
         if (totalDependents === 0) return
         for (const dep of dependentGroups) {
             try {
-                dep.group._ifQueryResult = await get().evaluateGroupIfQuery(dep.group)
+                const depResult = await get().evaluateGroupIfQuery(dep.group)
+                get().updateGroupById(dep.group._id, (g: any) => { g._ifQueryResult = depResult })
             } catch (error) {
                 console.error(`  ❌ [DAG] Erreur évaluation groupe:`, error)
             }

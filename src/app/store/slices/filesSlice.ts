@@ -1,5 +1,6 @@
 import { produce } from 'immer'
 import { getCellByIdInDraft } from '../mutations'
+import { cloneCellForExecution, commitCellInState } from '../mutations'
 
 /** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
 const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
@@ -31,8 +32,8 @@ export const createFilesSlice = (
     },
 
     async loadSingleSourceFile(file: File, path: any, cellIndex: number, options: any = {}) {
-        const cell = get().getCellAtPath(path, cellIndex)
-        if (!cell || cell.type !== 'source') return
+        const cell = cloneCellForExecution(get().getCellAtPath(path, cellIndex))
+        if (!cell?._id || cell.type !== 'source') return
 
         const skipRunNextCells = options.skipRunNextCells === true
         cell._fileName = file.name
@@ -168,6 +169,7 @@ export const createFilesSlice = (
             cell._loaded = true
             cell._status = 'success'
             cell._pendingFileLoad = false
+            set((state: any) => commitCellInState(state, cell) as any)
             get().setStatus(`${cell.name} chargé!`, 'success')
 
             const existing = get()._roomFiles ?? []
@@ -192,6 +194,7 @@ export const createFilesSlice = (
             if (Array.isArray(cell.files)) cell.files = cell.files.filter((f: any) => f.slot !== 'source')
             delete cell.fileBase64
             delete cell.fileName
+            set((state: any) => commitCellInState(state, cell) as any)
         } finally {
             set({ isLoading: false })
         }
@@ -235,28 +238,14 @@ export const createFilesSlice = (
         const fileInput = document.getElementById('fileInput_' + cell._id) as HTMLInputElement
         if (fileInput) fileInput.value = ''
 
-        cell._fileName = ''
-        cell._currentFile = null
-        cell._loaded = false
-        cell._status = null
-        cell._importFailed = false
-        cell._loadedViaFallback = false
-        cell._mainQueryError = null
-        cell._fallbackQueryError = null
-        cell._rejectErrorsCount = 0
-        cell._rejectedCellsCount = 0
-        cell._rowCount = 0
-        cell._queryBuilder = null
-        if (Array.isArray(cell.files)) cell.files = cell.files.filter((f: any) => f.slot !== 'source')
-        delete cell.fileBase64
-        delete cell.fileName
-
-        await get().refreshDuckdbTables()
-
-        get().setStatus(`Fichier supprimé de ${cell.name}`, 'success')
         set((state: any) => immer(state, (draft: any) => {
             const target = getCellByIdInDraft(draft, cell._id)
             if (!target) return
+            target._fileName = ''
+            target._currentFile = null
+            target._loaded = false
+            target._status = null
+            target._importFailed = false
             target._loadedViaFallback = false
             target._mainQueryError = null
             target._fallbackQueryError = null
@@ -268,6 +257,10 @@ export const createFilesSlice = (
             delete target.fileBase64
             delete target.fileName
         }))
+
+        await get().refreshDuckdbTables()
+
+        get().setStatus(`Fichier supprimé de ${cell.name}`, 'success')
     },
 
     handleDocxTemplateDrop(e: any, path: any, cellIndex: number) {
