@@ -2,7 +2,7 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
     test: {
-        include: ['tests/**/*.test.ts'],
+        include: ['tests/**/*.test.ts', 'tests/**/*.test.tsx'],
         environment: 'node',
         reporters: 'default',
         // Les paquets @sqlrooms sont livrés avec des imports internes sans extension :
