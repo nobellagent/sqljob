@@ -149,12 +149,15 @@ export const createGroupsSlice = (
     openLoopConfigModal(path: any) {
         const group = get().getGroupAtPath(path)
         if (group) {
-            if (!group.loop) {
-                group.loop = { enabled: false, query: '', zip: false, zipQuery: '' }
-            } else if (group.loop.zip === undefined) {
-                group.loop.zip = false
-                group.loop.zipQuery = group.loop.zipQuery || ''
-            }
+            set((state: any) => immer(state, (draft: any) => {
+                const g = getGroupInDraft(draft, path)
+                if (!g) return
+                if (!g.loop) g.loop = { enabled: false, query: '', zip: false, zipQuery: '' }
+                else if (g.loop.zip === undefined) {
+                    g.loop.zip = false
+                    g.loop.zipQuery = g.loop.zipQuery || ''
+                }
+            }))
             set({ loopConfigModal: { open: true, path } })
         }
     },
@@ -162,7 +165,12 @@ export const createGroupsSlice = (
     openGroupSettingsModal(path: any) {
         const group = get().getGroupAtPath(path)
         if (group) {
-            ConfigManager.ensureGroupQueries(group)
+            // `ensureGroupQueries` crée la requête « main » si elle manque :
+            // à faire dans un brouillon, l'état étant gelé.
+            set((state: any) => immer(state, (draft: any) => {
+                const g = getGroupInDraft(draft, path)
+                if (g) ConfigManager.ensureGroupQueries(g)
+            }))
             set({ groupSettingsModal: { open: true, path } })
         }
     },

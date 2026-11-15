@@ -285,9 +285,13 @@ export const createFilesSlice = (
             get().setStatus('Chargement du template Word...', 'loading')
             const arrayBuffer = await file.arrayBuffer()
             const base64 = FileHandler.arrayBufferToBase64(arrayBuffer)
-            cell.docxTemplateBase64 = base64
-            cell.docxTemplateFileName = file.name
-            ConfigManager.setCellFileData(cell, { base64, fileName: file.name })
+            set((state: any) => immer(state, (draft: any) => {
+                const target = getCellByIdInDraft(draft, cell._id)
+                if (!target) return
+                target.docxTemplateBase64 = base64
+                target.docxTemplateFileName = file.name
+                ConfigManager.setCellFileData(target, { base64, fileName: file.name })
+            }))
             get().setStatus('Template Word chargé', 'success')
         } catch (error: any) {
             get().setStatus('Erreur lors du chargement du template: ' + error.message, 'error')

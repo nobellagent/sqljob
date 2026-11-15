@@ -114,7 +114,7 @@ export function createEmbeddedFilesActions(
                 if (found.cell.type !== 'publipostageWord') { console.warn(`La cellule au chemin "${cellPath}" n'est pas de type publipostageWord`); continue }
 
                 try {
-                    ConfigManager.setCellFileData(found.cell, { base64, fileName })
+                    get().updateCellById(found.cell._id, (c: any) => ConfigManager.setCellFileData(c, { base64, fileName }))
                 } catch (error: any) {
                     console.error(`Erreur chargement template docx ${cellPath}:`, error)
                 }
