@@ -45,25 +45,6 @@ import { formatValueForInputType } from '../../lib/utils'
 // permettrait de supprimer cette ligne, mais requiert une refonte architecturale complète.
 setAutoFreeze(false)
 
-// ─── Expose globals (nécessaire pour les expressions dans les templates HTML) ─
-export function exposeGlobals() {
-    Object.assign(window, {
-        ConfigManager,
-        exportConfigToJson,
-        CellConfigService,
-        initializeCell,
-        EChartSqlParser,
-        GistEncrypt,
-        GitHubGistManager,
-        FileHandler,
-        DuckDBManager,
-        CDNManager,
-        CELL_TYPE_SCHEMAS,
-        CELL_TYPE_HANDLERS,
-        formatValueForInputType,
-    })
-}
-
 // Dernière configuration chargée (Gist, JSON, URL). Module-scoped : aucun état
 // applicatif sur `window` — la valeur ne sert qu'à reconstruire le store.
 

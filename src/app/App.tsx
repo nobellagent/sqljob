@@ -11,7 +11,7 @@ import { ThemeProvider } from '@sqlrooms/ui'
 import { Toaster } from '@sqlrooms/ui'
 import { Spinner } from '@sqlrooms/ui'
 import { ConfigManager } from '../lib/ConfigManager'
-import { useNotebookStore, exposeGlobals } from './store/notebookStore'
+import { useNotebookStore } from './store/notebookStore'
 import { useTemplateModal } from './store/uiStores'
 import { Room } from './room'
 import { GistPassphraseModal } from './components/modals/GistPassphraseModal'
@@ -38,9 +38,6 @@ function AppContent() {
     const initFromConfig = useNotebookStore(s => s.initFromConfig)
 
     useEffect(() => {
-        // Expose les globals pour compatibilité avec les mixins
-        exposeGlobals()
-
         // Wiring du templateModal : quand selectTemplate est appelé,
         // déléguer à l'action Zustand du notebookStore
         useTemplateModal.setState({

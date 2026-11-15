@@ -1,3 +1,4 @@
+import { GistEncrypt } from '../../../lib/GistEncrypt'
 /**
  * Modals d'export : ExportModal, GistTokenModal, GistResultModal, JsonPassphraseModal
  */
@@ -115,10 +116,10 @@ export function ExportModal() {
                                 <Switch
                                     checked={em.encryptGist}
                                     onCheckedChange={v => {
-                                        const GistEncrypt = window.GistEncrypt as any
+                                        
                                         update({
                                             encryptGist: v,
-                                            gistPassphrase: v && !em.gistPassphrase ? GistEncrypt?.generatePassphrase() || '' : em.gistPassphrase
+                                            gistPassphrase: v && !em.gistPassphrase ? GistEncrypt.generatePassphrase() : em.gistPassphrase
                                         })
                                     }}
                                 />
