@@ -12,99 +12,8 @@ import { VarInput } from './SqlBlockEditor'
 
 // ─── Config des types de graphique ────────────────────────────────────────────
 
-interface RoleSlotConfig {
-    role: string
-    label: string
-    multiple: boolean   // true → liste d'entrées, false → select unique
-    optional: boolean   // true → "-- aucune --" possible
-    hasLabel: boolean   // true → champ texte pour l'alias AS "Label"
-}
 
-const CHART_TYPE_CONFIGS: Record<string, { label: string; icon: string; roles: RoleSlotConfig[] }> = {
-    datatable: {
-        label: 'Datatable',
-        icon: 'material-symbols-light:table',
-        roles: [],
-    },
-    kpi: {
-        label: 'KPI',
-        icon: 'material-symbols-light:123',
-        roles: [
-            { role: 'KPI',           label: 'Valeur',        multiple: true,  optional: false, hasLabel: true },
-            { role: 'PERCENT',       label: 'Pourcentage',   multiple: false, optional: true,  hasLabel: true },
-            { role: 'COMPARE',       label: 'Comparaison',   multiple: false, optional: true,  hasLabel: true },
-            { role: 'TREND',         label: 'Tendance',      multiple: false, optional: true,  hasLabel: true },
-            { role: 'TREND_PERCENT', label: 'Tendance (%)',  multiple: false, optional: true,  hasLabel: true },
-        ],
-    },
-    bar: {
-        label: 'Barres',
-        icon: 'material-symbols-light:bar-chart',
-        roles: [
-            { role: 'XAXIS',    label: 'Axe X',      multiple: false, optional: false, hasLabel: true },
-            { role: 'BARCHART', label: 'Barres',      multiple: true,  optional: false, hasLabel: true },
-            { role: 'CATEGORY', label: 'Catégorie',   multiple: false, optional: true,  hasLabel: true },
-            { role: 'COLOR',    label: 'Couleur',     multiple: false, optional: true,  hasLabel: false },
-        ],
-    },
-    line: {
-        label: 'Lignes',
-        icon: 'material-symbols-light:show-chart',
-        roles: [
-            { role: 'XAXIS',     label: 'Axe X',    multiple: false, optional: false, hasLabel: true },
-            { role: 'LINECHART', label: 'Courbes',   multiple: true,  optional: false, hasLabel: true },
-            { role: 'CATEGORY',  label: 'Catégorie', multiple: false, optional: true,  hasLabel: true },
-        ],
-    },
-    'bar+line': {
-        label: 'Barres + Lignes',
-        icon: 'material-symbols-light:stacked-bar-chart',
-        roles: [
-            { role: 'XAXIS',     label: 'Axe X',    multiple: false, optional: false, hasLabel: true },
-            { role: 'BARCHART',  label: 'Barres',    multiple: true,  optional: false, hasLabel: true },
-            { role: 'LINECHART', label: 'Courbes',   multiple: true,  optional: false, hasLabel: true },
-        ],
-    },
-    pie: {
-        label: 'Camembert',
-        icon: 'material-symbols-light:pie-chart',
-        roles: [
-            { role: 'CATEGORY', label: 'Catégorie', multiple: false, optional: false, hasLabel: true },
-            { role: 'PIECHART', label: 'Valeurs',   multiple: false, optional: false, hasLabel: true },
-            { role: 'COLOR',    label: 'Couleur',   multiple: false, optional: true,  hasLabel: false },
-        ],
-    },
-    donut: {
-        label: 'Donut',
-        icon: 'material-symbols-light:donut-large',
-        roles: [
-            { role: 'CATEGORY',   label: 'Catégorie', multiple: false, optional: false, hasLabel: true },
-            { role: 'DONUTCHART', label: 'Valeurs',   multiple: false, optional: false, hasLabel: true },
-            { role: 'COLOR',      label: 'Couleur',   multiple: false, optional: true,  hasLabel: false },
-        ],
-    },
-    gauge: {
-        label: 'Jauge',
-        icon: 'material-symbols-light:speed',
-        roles: [
-            { role: 'GAUGE',   label: 'Valeur',   multiple: false, optional: false, hasLabel: true },
-            { role: 'RANGE',   label: 'Plage',    multiple: false, optional: true,  hasLabel: false },
-            { role: 'COLORS',  label: 'Couleurs', multiple: false, optional: true,  hasLabel: false },
-            { role: 'LABELS',  label: 'Labels',   multiple: false, optional: true,  hasLabel: false },
-        ],
-    },
-    boxplot: {
-        label: 'Boîte à moustaches',
-        icon: 'material-symbols-light:candlestick-chart',
-        roles: [
-            { role: 'BOXPLOT', label: 'Valeurs', multiple: true,  optional: false, hasLabel: true },
-            { role: 'XAXIS',   label: 'Axe X',   multiple: false, optional: true,  hasLabel: true },
-        ],
-    },
-}
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-
+import { CHART_TYPE_CONFIGS, type RoleSlotConfig } from './chartConfig/chartTypeConfigs'
 const NONE_VALUE = '__none__'
 
 /** Correspondance entre rôles compatibles lors d'un changement de type. */
@@ -166,34 +75,8 @@ const SELECT_TYPE_CLASS = 'h-6 text-xs px-1.5 border border-border rounded bg-ba
 
 // ─── Sous-composant ColSelect (native <select>) ────────────────────────────────
 
-function ColSelect({ value, availableColumns, optional, onChange }: {
-    value: string
-    availableColumns: string[]
-    optional: boolean
-    onChange: (col: string | null) => void
-}) {
-    const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        const v = e.target.value
-
-        onChange(v === NONE_VALUE ? null : v)
-    }
-    return (
-        <select
-            value={value || NONE_VALUE}
-            onChange={handleChange}
-            className={SELECT_CLASS}
-        >
-            {optional && <option value={NONE_VALUE}>-- aucune --</option>}
-            {availableColumns.map(col => (
-                <option key={col} value={col}>{col}</option>
-            ))}
-        </select>
-    )
-}
-
-// ─── Composant principal ──────────────────────────────────────────────────────
-
-export interface ChartConfigEditorProps {
+import { ColSelect } from './chartConfig/ColSelect'
+interface ChartConfigEditorProps {
     chartConfig: ChartConfig | undefined
     availableColumns: string[]
     availableColTypes?: Record<string, string>
