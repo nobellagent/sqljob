@@ -1,5 +1,6 @@
 import {useCallback, useEffect, useState} from 'react'
 import {DatabaseIcon, HardDriveIcon, RotateCcwIcon} from 'lucide-react'
+import {useBaseRoomShellStore} from '@sqlrooms/room-shell'
 import {executeCommand} from '../../core/commands'
 import {DuckDBManager} from '../../lib/DuckDBManager'
 
@@ -13,6 +14,58 @@ function formatBytes(bytes: number): string {
         unit += 1
     }
     return `${value.toFixed(value >= 10 || unit === 0 ? 0 : 1)} ${units[unit]}`
+}
+
+/**
+ * Indicateur compact pour la barre d'outils : taille de la base, mode de
+ * persistance, et accès au panneau Sources.
+ */
+export function DbStatusBadge() {
+    const [size, setSize] = useState<number | null>(null)
+    const togglePanel = useBaseRoomShellStore(s => s.layout.togglePanel)
+
+    useEffect(() => {
+        let cancelled = false
+        const read = async () => {
+            try {
+                const conn = DuckDBManager.getConnection()
+                if (!conn) return
+                const result = await conn.query('SELECT database_size FROM pragma_database_size()')
+                const row = result.toArray?.()[0]
+                const value = row ? Number(Object.fromEntries(row).database_size) : NaN
+                if (!cancelled) setSize(Number.isFinite(value) ? value : null)
+            } catch {
+                if (!cancelled) setSize(null)
+            }
+        }
+        void read()
+        const timer = setInterval(read, 15_000)
+        return () => {
+            cancelled = true
+            clearInterval(timer)
+        }
+    }, [])
+
+    return (
+        <button
+            type="button"
+            onClick={() => togglePanel('data')}
+            title={`Base ${DuckDBManager.usingPersistence ? 'persistante (OPFS)' : 'en mémoire'} — ouvrir les sources`}
+            className="flex items-center gap-1 px-2 py-1 rounded text-[11px] text-muted-foreground hover:text-foreground hover:bg-secondary/60"
+        >
+            <DatabaseIcon className="h-3.5 w-3.5" />
+            <span>{size === null ? 'base' : formatBytes(size)}</span>
+            <span
+                className={`px-1 rounded text-[10px] font-medium ${
+                    DuckDBManager.usingPersistence
+                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                        : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                }`}
+            >
+                {DuckDBManager.usingPersistence ? 'OPFS' : 'RAM'}
+            </span>
+        </button>
+    )
 }
 
 /**

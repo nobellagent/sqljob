@@ -20,6 +20,7 @@ import {
 import { Icon } from '../../lib/icons'
 import { executeCommand } from '../../core/commands'
 import { PageContent } from './PageContent'
+import { DbStatusBadge } from './DbFooter'
 
 // ─── TabBar (liste des pages) ─────────────────────────────────────────────────
 function TabBar() {
@@ -183,6 +184,7 @@ function NavBar() {
                 <TabBar />
             </div>
             <div className="flex-none flex gap-2 items-center">
+                <DbStatusBadge />
                 {devMode && (
                     <Button variant="ghost" size="sm" onClick={() => executeCommand('notebook.runAll')} disabled={isLoading} title="Tout exécuter">
                         <Icon name="play-arrow" size={20} />
