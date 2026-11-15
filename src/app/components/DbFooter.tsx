@@ -30,9 +30,9 @@ export function DbStatusBadge() {
             try {
                 const conn = DuckDBManager.getConnection()
                 if (!conn) return false
-                const result = await conn.query('SELECT database_size FROM pragma_database_size()')
+                const result = await conn.query('SELECT total_blocks * block_size AS bytes FROM pragma_database_size()')
                 const row = result.toArray?.()[0]
-                const value = row ? Number(Object.fromEntries(row).database_size) : NaN
+                const value = row ? Number(row.bytes) : NaN
                 if (!cancelled) setSize(Number.isFinite(value) ? value : null)
                 return true
             } catch {
@@ -88,9 +88,9 @@ export function DbFooter() {
         try {
             const conn = DuckDBManager.getConnection()
             if (!conn) return
-            const result = await conn.query('SELECT database_size FROM pragma_database_size()')
+            const result = await conn.query('SELECT total_blocks * block_size AS bytes FROM pragma_database_size()')
             const row = result.toArray?.()[0]
-            const value = row ? Number(Object.fromEntries(row).database_size) : NaN
+            const value = row ? Number(row.bytes) : NaN
             setSize(Number.isFinite(value) ? value : null)
         } catch {
             setSize(null)
