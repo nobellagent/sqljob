@@ -31,10 +31,17 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=6144
 
+      - name: Empreintes d'intégrité (SRI)
+        run: node tools/sri.mjs dist-cdn
+
       - name: Vérifier le paquet
         run: npm pack --dry-run
 
-      - name: Publier sur npm
+      # Publication npm volontairement inactive : le paquet s'appelle
+      # @ihatexcel/sqljob, un scope qui n'appartient pas à ce fork, et il n'est
+      # pas publié sur le registre. L'étape reste inerte tant que le secret
+      # NPM_TOKEN n'existe pas. La release GitHub (bundle zip) suffit.
+      - name: Publier sur npm (inactif : aucun NPM_TOKEN)
         if: startsWith(github.ref, 'refs/tags/v') && env.NODE_AUTH_TOKEN != ''
         run: npm publish --provenance --access public
         env:

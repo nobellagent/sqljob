@@ -44,6 +44,9 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=6144
 
+      - name: Empreintes d'intégrité (SRI)
+        run: node tools/sri.mjs dist-cdn
+
       - name: Prepare site files
         run: |
           mkdir -p _site

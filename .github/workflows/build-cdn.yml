@@ -26,6 +26,9 @@ jobs:
         env:
           NODE_OPTIONS: --max-old-space-size=6144
 
+      - name: Empreintes d'intégrité (SRI)
+        run: node tools/sri.mjs dist-cdn
+
       - name: Commit dist-cdn
         run: |
           git config user.name "github-actions[bot]"
