@@ -4,6 +4,21 @@ import {saveProject} from '../store/projectPersistence'
 import {serializeForStorage} from '../store/serializeProject'
 
 const DEBOUNCE_MS = 600
+/**
+ * Fenêtre pendant laquelle un document vide n'est pas sauvegardé.
+ *
+ * Au démarrage, la restauration IndexedDB peut échouer ou être dépassée par une
+ * navigation : sauvegarder aussitôt l'état initial (vide) écraserait le document
+ * de l'utilisateur. Passé ce délai, un document vide est une action délibérée
+ * (suppression du dernier groupe) et il est sauvegardé normalement.
+ */
+const EMPTY_SAVE_GUARD_MS = 8000
+
+/** Vrai si le document ne contient aucun groupe, sur aucune page. */
+function isEmptyDocument(pages: any[] | undefined): boolean {
+    if (!pages || pages.length === 0) return true
+    return pages.every((page: any) => (page?.groups?.length ?? 0) === 0)
+}
 
 /**
  * Sauvegarde le document dans IndexedDB à chaque modification.
@@ -22,11 +37,16 @@ export function useProjectPersistence(enabled: boolean): void {
         let timer: ReturnType<typeof setTimeout> | undefined
         let lastSaved: string | null = null
         let writing = false
+        const startedAt = Date.now()
 
         const flush = async () => {
             if (writing) return
             const pages = useNotebookStore.getState().pages
             if (!pages || pages.length === 0) return
+            if (isEmptyDocument(pages) && Date.now() - startedAt < EMPTY_SAVE_GUARD_MS) {
+                console.warn('[sqljob] document vide au démarrage : sauvegarde reportée')
+                return
+            }
 
             let serialized: string
             try {
