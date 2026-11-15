@@ -1,5 +1,31 @@
 # Changelog
 
+## 0.4.0 — 2026-11-15
+
+### Store immuable : fin de la dette de mutation
+
+Le store ne mute plus l'état en place. Toutes les écritures passent par `produce()` (voir
+`src/app/store/mutations.ts`) : une branche modifiée change de référence, ce qui suffit à React
+pour re-rendre. Le compteur de version `_rev`, l'action `forceUpdate()` et le contournement
+`setAutoFreeze(false)` disparaissent (vérifié : plus aucune occurrence dans `src`).
+
+- **`store/mutations.ts`** : `updateCellInState`, `updateGroupInState`, `updateCellByIdInState`,
+  `updateGroupByIdInState`, `getCellByIdInState`, plus `cloneCellForExecution` / `commitCellInState`
+  pour les exécutions asynchrones (statut, résultats, tables Arrow) qui écrivent sur une copie de
+  travail puis la valident en une fois.
+- **Actions** `updateCellAt`, `updateGroupAt`, `updateGroupById`, `updateCellById` : le mutateur
+  reçoit un brouillon immer, donc le code d'édition existant est réutilisé tel quel.
+- **Slices** : `cells`, `groups`, `files`, `copyPaste`, `export`, `parameters`, `execution` — les
+  groupes et cellules ne sont plus modifiés par référence ; `executionSlice` et le chargement de
+  source travaillent sur une copie avant validation.
+- **Composants** : `GroupModals`, `CellConfigModal`, `SqlBlockEditor`, `CellHeader`, `SqlEditorWidget`,
+  les 12 corps de cellule et `GroupContainer` écrivent via les actions de mise à jour. L'instance
+  EasyMDE n'est plus stockée dans la cellule (elle vit dans une `ref`).
+- **Abonnements** : les composants qui s'abonnaient au compteur de version lisent désormais les
+  données réelles (groupes de la page, option ECharts, contenu HTML, run Univer).
+- **Tests** : 8 tests sur les mises à jour immuables (identité, branches partagées, cellules
+  imbriquées, recherche par identifiant), et un test de rendu par type de cellule.
+
 ## 0.3.1 — 2026-11-15
 
 - **Correction de la persistance du document** : les cellules étaient mutées en place et portaient

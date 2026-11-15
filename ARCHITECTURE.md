@@ -10,8 +10,11 @@
 2. **Un seul chemin de rendu.** Un type de cellule est décrit par une définition (schéma, rendu,
    exécution, export) et non par une cascade de `if (cell.type === …)`.
 3. **Aucun état applicatif sur `window`.** Seul `window.sqljob` est exposé, comme API d'automatisation.
-4. **Aucune mutation hors immutabilité.** `setAutoFreeze(false)` et `forceUpdate()` sont des dettes à
-   résorber (phase P3) ; tout nouveau code passe par `produce()` et des sélecteurs.
+4. **Aucune mutation en place.** L'état est immuable : toute écriture passe par
+   `store/mutations.ts` (`updateCellAt`, `updateGroupAt`, `updateCellById`, `updateGroupById`) ou par
+   un `produce()` explicite dans un slice. Une branche modifiée change de référence, ce qui suffit à
+   React. Les exécutions asynchrones travaillent sur `cloneCellForExecution()` puis valident d'un
+   bloc avec `commitCellInState()`.
 5. **Le data layer est injectable.** `DuckDBManager` implémente une interface ; il n'est pas consulté
    en statique depuis les composants.
 6. **Aucun fichier source > 20 KB** hors code généré (objectif P3 ; les fichiers actuels au-delà sont
