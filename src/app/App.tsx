@@ -15,6 +15,8 @@ import { useNotebookStore, exposeGlobals } from './store/notebookStore'
 import { useTemplateModal } from './store/uiStores'
 import { Room } from './room'
 import { GistPassphraseModal } from './components/modals/GistPassphraseModal'
+import { loadProject } from './store/projectPersistence'
+import { useProjectPersistence } from './hooks/useProjectPersistence'
 
 type AppState = 'loading' | 'passphrase' | 'ready'
 
@@ -36,7 +38,7 @@ function AppContent() {
         })
 
         // Chargement de la config
-        ConfigManager.loadConfigFromGist().then((loadResult: any) => {
+        ConfigManager.loadConfigFromGist().then(async (loadResult: any) => {
             if (loadResult?.needsPassphrase && loadResult?.encryptedContent) {
                 window._pendingEncryptedGist = loadResult.encryptedContent
                 window._encryptedSource = loadResult.source || 'gist'
@@ -44,6 +46,12 @@ function AppContent() {
             } else {
                 if (loadResult) {
                     initFromConfig(loadResult)
+                } else {
+                    // Pas de config dans l'URL : on reprend le document local.
+                    const pages = await loadProject()
+                    if (pages) {
+                        useNotebookStore.getState().setPages(pages)
+                    }
                 }
                 setAppState('ready')
             }
@@ -58,6 +66,9 @@ function AppContent() {
             useNotebookStore.getState().init?.()
         }
     }, [appState])
+
+    // Sauvegarde continue du document dans IndexedDB.
+    useProjectPersistence(appState === 'ready')
 
     if (appState === 'loading') {
         return (
