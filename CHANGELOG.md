@@ -1,5 +1,25 @@
 # Changelog
 
+## 0.4.1 — 2026-11-15
+
+### Découpage : plus aucun fichier source au-dessus de 20 Ko
+
+- **`SqlBlockEditor.tsx` (182 Ko) → 28 modules** : `editor/config`, `schema`, `session`,
+  `useStepEyeData`, `ui`, `distinct`, `varInput`, `filters`, une fabrique par type d'étape
+  (`editor/steps/*`), les parties d'assemblage (`editor/parts/*`) et un hook `useSqlBlockEditor`
+  qui porte l'état et les handlers. Le composant ne garde que la mise en page ; les imports
+  existants continuent de fonctionner via `editor/stepParts.tsx` (barrel).
+- **`executionSlice.ts` (73 Ko) → 6 fabriques** : `groupRun`, `zipExport`, `sqlExec`, `simpleCells`,
+  `documents`, `richCells`, plus `execution/helpers.ts`. Le slice recompose par spread ; les 34
+  méthodes sont conservées à l'identique (vérifié par comparaison des signatures).
+- **Code mort supprimé** : `NotebookLayout.tsx`, les hooks `useCells`/`useExecution`/`useFiles`/
+  `useGroups`, `GenericHtmlBody` ; exports inutilisés dé-exportés dans 26 fichiers.
+- **Dépendances** : six paquets inutilisés retirés (`@codemirror/commands`, `@codemirror/language`,
+  `@codemirror/search`, `@sqlrooms/canvas`, `@sqlrooms/cells`, `@sqlrooms/notebook`), huit
+  dépendances implicites déclarées (Monaco, Univer, `@sqlrooms/monaco-editor`).
+- **`knip`** : configuration `knip.json`, script `lint:dead`, exécution en CI. Le dépôt est propre
+  (aucun export mort, aucun fichier inutilisé).
+
 ## 0.4.0 — 2026-11-15
 
 ### Store immuable : fin de la dette de mutation
