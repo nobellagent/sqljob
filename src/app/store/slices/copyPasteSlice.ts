@@ -1,3 +1,8 @@
+import { produce } from 'immer'
+import { getGroupInDraft } from '../mutations'
+
+/** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
+const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
 import type { StoreApi } from 'zustand'
 import type { NotebookStoreState } from '../types'
 
@@ -155,9 +160,6 @@ export const createCopyPasteSlice = (
             get().setStatus('Rien à coller', 'info')
             return
         }
-        const group = get().getGroupAtPath(path)
-        if (!group) return
-
         const usedNames = get()._collectUsedCellNames()
 
         if (clipItem.type === 'sqljob-cell') {
@@ -166,22 +168,28 @@ export const createCopyPasteSlice = (
             cellData._status = null
             cellData._results = null
             cellData._resultInfo = null
-            cellData._order = get().getNextOrder(group)
             if (cellData.name) {
                 cellData.name = get()._makeUniqueName(cellData.name, usedNames)
             }
-            if (!group.cells) group.cells = []
-            group.cells.push(cellData)
+            set((state: any) => immer(state, (draft: any) => {
+                const group = getGroupInDraft(draft, path)
+                if (!group) return
+                cellData._order = get().getNextOrder(group)
+                if (!group.cells) group.cells = []
+                group.cells.push(cellData)
+            }))
             get().setStatus('Cellule collée', 'success')
         } else if (clipItem.type === 'sqljob-group') {
             const groupData = JSON.parse(JSON.stringify(clipItem.data))
             get()._prepareGroupForPaste(groupData, usedNames)
-            groupData._order = get().getNextOrder(group)
-            if (!group.children) group.children = []
-            group.children.push(groupData)
+            set((state: any) => immer(state, (draft: any) => {
+                const group = getGroupInDraft(draft, path)
+                if (!group) return
+                groupData._order = get().getNextOrder(group)
+                if (!group.children) group.children = []
+                group.children.push(groupData)
+            }))
             get().setStatus('Groupe collé', 'success')
         }
-
-        set((s: any) => ({ _rev: s._rev + 1 }))
     },
 })

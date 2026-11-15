@@ -1,3 +1,8 @@
+import { produce } from 'immer'
+import { getCellByIdInDraft } from '../mutations'
+
+/** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
+const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
 import type { StoreApi } from 'zustand'
 import { FileHandler } from '../../../lib/FileHandler'
 import { ConfigManager } from '../../../lib/ConfigManager'
@@ -249,7 +254,20 @@ export const createFilesSlice = (
         await get().refreshDuckdbTables()
 
         get().setStatus(`Fichier supprimé de ${cell.name}`, 'success')
-        set((s: any) => ({ _rev: s._rev + 1 }))
+        set((state: any) => immer(state, (draft: any) => {
+            const target = getCellByIdInDraft(draft, cell._id)
+            if (!target) return
+            target._loadedViaFallback = false
+            target._mainQueryError = null
+            target._fallbackQueryError = null
+            target._rejectErrorsCount = 0
+            target._rejectedCellsCount = 0
+            target._rowCount = 0
+            target._queryBuilder = null
+            if (Array.isArray(target.files)) target.files = target.files.filter((x: any) => x.slot !== 'source')
+            delete target.fileBase64
+            delete target.fileName
+        }))
     },
 
     handleDocxTemplateDrop(e: any, path: any, cellIndex: number) {

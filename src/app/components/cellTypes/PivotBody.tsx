@@ -9,13 +9,13 @@ import {DuckdbTableInfo} from '../../store/types'
 import type {PivotBodyProps, PivotCellJson} from './types'
 
 export const PivotBody: React.FC<PivotBodyProps> = ({ cell }) => {
-    const { _duckdbTables, forceUpdate, devMode } = useNotebookStore(useShallow((s: {
+    const { _duckdbTables, devMode, updateCellById } = useNotebookStore(useShallow((s: {
         _duckdbTables: Record<string, DuckdbTableInfo>
-        forceUpdate: () => void
+        updateCellById: (id: string, fn: (cell: any) => void) => void
         devMode: boolean
     }) => ({
         _duckdbTables: s._duckdbTables,
-        forceUpdate: s.forceUpdate,
+        updateCellById: s.updateCellById,
         devMode: s.devMode,
     })))
 
@@ -36,25 +36,27 @@ export const PivotBody: React.FC<PivotBodyProps> = ({ cell }) => {
 
     const callbacks = useMemo(() => ({
         setSource: (src: PivotSource | undefined) => {
-            cell.json = produce(
-                (cell.json as PivotCellJson | undefined) ?? {},
-                (draft: PivotCellJson) => {
-                    draft.selectedTable = src?.kind === 'table' ? src.tableName : ''
-                    draft.pivotConfig = undefined
-                }
-            ) as Record<string, unknown>
-            forceUpdate()
+            updateCellById(cell._id, (c: any) => {
+                c.json = produce(
+                    (c.json as PivotCellJson | undefined) ?? {},
+                    (draft: PivotCellJson) => {
+                        draft.selectedTable = src?.kind === 'table' ? src.tableName : ''
+                        draft.pivotConfig = undefined
+                    }
+                ) as Record<string, unknown>
+            })
         },
         setConfig: (config: PivotConfig) => {
-            cell.json = produce(
-                (cell.json as PivotCellJson | undefined) ?? {},
-                (draft: PivotCellJson) => {
-                    draft.pivotConfig = config
-                }
-            ) as Record<string, unknown>
-            forceUpdate()
+            updateCellById(cell._id, (c: any) => {
+                c.json = produce(
+                    (c.json as PivotCellJson | undefined) ?? {},
+                    (draft: PivotCellJson) => {
+                        draft.pivotConfig = config
+                    }
+                ) as Record<string, unknown>
+            })
         },
-    }), [cell, forceUpdate])
+    }), [cell, updateCellById])
 
     if (!selectedTable && !devMode) {
         return <div className="text-xs text-muted-foreground p-4 text-center">Aucune table sélectionnée.</div>

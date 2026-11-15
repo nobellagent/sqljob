@@ -1,3 +1,4 @@
+import { cloneCellForExecution, commitCellInState } from '../mutations'
 import type { StoreApi } from 'zustand'
 import { safeEvalJs } from '../../../lib/safeEval'
 import { rawTableDataStore as _rawTableDataStore } from '../../../lib/tableDataStore'
@@ -356,13 +357,13 @@ export const createExecutionSlice = (
 
     async runCellAt(pathOrIndex, cellIndex) {
         const path = Array.isArray(pathOrIndex) ? pathOrIndex : [pathOrIndex]
-        const cell = get().getCellAtPath(path, cellIndex)
-        if (!cell) return
+        const cell = cloneCellForExecution(get().getCellAtPath(path, cellIndex))
+        if (!cell?._id) return
 
         cell._status = 'running'
         set({ isLoading: true })
         get().setStatus(`Exécution de ${cell.name || cell.type}...`, 'loading')
-        set((s: any) => ({ _rev: s._rev + 1 }))
+        set((state: any) => commitCellInState(state, cell) as any)
 
         try {
             const schema = CELL_TYPE_SCHEMAS?.types[cell?.type]
@@ -379,7 +380,7 @@ export const createExecutionSlice = (
             get().setStatus('Erreur: ' + error.message, 'error')
         } finally {
             set({ isLoading: false })
-            set((s: any) => ({ _rev: s._rev + 1 }))
+            set((state: any) => commitCellInState(state, cell) as any)
         }
     },
 
@@ -757,7 +758,7 @@ export const createExecutionSlice = (
             }
 
             cell._htmlContent = htmlContent
-            set((s: any) => ({ _rev: s._rev + 1 }))
+            set((state: any) => commitCellInState(state, cell) as any)
             get().setStatus('HTML chargé', 'success')
         } catch (error) {
             throw error
@@ -1228,7 +1229,7 @@ export const createExecutionSlice = (
             cell._arrowTable = arrowTable
             cell._perspectiveScheduled = true
             cell._perspectiveReady = true
-            set((s: any) => ({ _rev: s._rev + 1 }))
+            set((state: any) => commitCellInState(state, cell) as any)
 
             try {
                 await new Promise(r => setTimeout(r, 0))
@@ -1363,7 +1364,7 @@ export const createExecutionSlice = (
         // Signaler que les données sont prêtes → UniverSheetBody appellera initialize()
         cell._univerRunId = (cell._univerRunId || 0) + 1
         cell._univerReady = true
-        set((s: any) => ({ _rev: s._rev + 1 }))
+        set((state: any) => commitCellInState(state, cell) as any)
         cell._resultInfo = cell._univerSnapshotPending ? '✅ Sheet prête (snapshot)' : '✅ Sheet prête'
         get().setStatus('Univer Sheet prête', 'success')
     },
@@ -1381,7 +1382,7 @@ export const createExecutionSlice = (
             const q = ConfigManager.ensureCellQueries(cell, 'main')
             if (q) q.sql = ''
             cell._univerModified = false
-            set((s: any) => ({ _rev: s._rev + 1 }))
+            set((state: any) => commitCellInState(state, cell) as any)
         } catch (e) {
             console.error('[univerSheet] Erreur capture snapshot:', e)
             throw e

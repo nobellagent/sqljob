@@ -40,7 +40,6 @@ export function TableSkeleton() {
 }
 
 export function EChartRenderer({ cell, hasHeight }: { cell: any; hasHeight: boolean }) {
-    const { _rev } = useNotebookStore(useShallow(s => ({ _rev: s._rev })))
     const chartRef = useRef<HTMLDivElement>(null)
     const lastRenderedOption = useRef<any>(null)
 
@@ -55,7 +54,7 @@ export function EChartRenderer({ cell, hasHeight }: { cell: any; hasHeight: bool
             chart.clear()
             chart.setOption(cell._echartsOption)
         })
-    }, [_rev, cell._echartsOption])
+    }, [cell._echartsOption])
 
     // Resize ECharts quand le conteneur change de dimensions (responsive)
     useEffect(() => {

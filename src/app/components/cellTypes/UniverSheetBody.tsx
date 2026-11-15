@@ -10,14 +10,14 @@ import type {CellBodyBaseProps} from './types'
 export const UniverSheetBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }) => {
     const {
         devMode, showSqlEditorVisible, hasCellHeight,
-        captureUniverSnapshot, exportUniverToXlsx, _rev,
+        captureUniverSnapshot, exportUniverToXlsx, updateCellById,
     } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         showSqlEditorVisible: s.showSqlEditorVisible,
         hasCellHeight: s.hasCellHeight,
         captureUniverSnapshot: s.captureUniverSnapshot,
         exportUniverToXlsx: s.exportUniverToXlsx,
-        _rev: s._rev,
+        updateCellById: s.updateCellById,
     })))
 
     const hasHeight = hasCellHeight(cell)
@@ -27,8 +27,7 @@ export const UniverSheetBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellI
 
     // Quand les données sont prêtes (_univerReady=true), appeler initialize()
     // sur le web component Lit qui gère l'initialisation Univer en interne.
-    // Guard sur _univerRunId : évite de réinitialiser lors d'un _rev parasite
-    // (ex. captureUniverSnapshot incrémente _rev sans changer les données).
+    // Guard sur _univerRunId : n'initialise qu'une fois par exécution.
     useEffect(() => {
         if (!cell._univerReady || !elementRef.current) return
         if (cell._univerRunId === lastInitRunId.current) return
@@ -65,10 +64,12 @@ export const UniverSheetBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellI
                 } catch (e) { console.error('[UniverSheet] DuckDB materialize error:', e) }
             } : undefined,
         }).catch((e: any) => {
-            cell._univerReady = false
-            cell._resultInfo = '❌ ' + e.message
+            updateCellById(cell._id, (c: any) => {
+                c._univerReady = false
+                c._resultInfo = '❌ ' + e.message
+            })
         })
-    }, [_rev, cell._univerReady])
+    }, [cell._univerReady, cell._univerRunId])
 
     const [saving, setSaving] = useState(false)
     const [exporting, setExporting] = useState(false)

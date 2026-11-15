@@ -18,7 +18,7 @@ import {useNotebookStore} from '../../store/notebookStore'
 import {CELL_TYPE_SCHEMAS} from '../../../lib/cellTypeSchemas'
 import {Input, Label, Select, SelectContent, SelectItem, SelectTrigger, SelectValue, Checkbox} from '@sqlrooms/ui'
 
-export function UniverConfigEditor({ cell, forceUpdate }: any) {
+export function UniverConfigEditor({ cell, apply }: { cell: any; apply: (fn: (c: any) => void) => void }) {
     const dbEngine = useNotebookStore(s => s.dbEngine)
     const isDucklings = dbEngine === 'ducklings'
     const getRawCfg = (): Record<string, any> => {
@@ -28,11 +28,15 @@ export function UniverConfigEditor({ cell, forceUpdate }: any) {
         try { return JSON.parse(v) } catch { return {} }
     }
     const setKey = (key: string, val: any) => {
-        if (!cell.json) cell.json = {}
-        const cur = getRawCfg()
-        if (val === undefined) { delete cur[key] } else { cur[key] = val }
-        cell.json.univerConfig = cur
-        forceUpdate()
+        apply(c => {
+            if (!c.json) c.json = {}
+            const cur = c.json.univerConfig
+            const config: Record<string, any> = (cur && typeof cur === 'object')
+                ? { ...cur }
+                : (typeof cur === 'string' ? JSON.parse(cur || '{}') : {})
+            if (val === undefined) { delete config[key] } else { config[key] = val }
+            c.json.univerConfig = config
+        })
     }
     const setFooterKey = (key: string, val: boolean) => {
         const cur = getRawCfg()

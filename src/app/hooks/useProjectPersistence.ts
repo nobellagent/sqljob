@@ -8,10 +8,9 @@ const DEBOUNCE_MS = 600
 /**
  * Sauvegarde le document dans IndexedDB à chaque modification.
  *
- * ⚠️ Le store mute `pages` **en place** (`group.cells.push(...)`) et signale le
- * changement par un `set()` sur `_rev`. Comparer la référence de `pages` ne
- * détecte donc aucune édition de cellule : on sérialise et on compare le
- * contenu au moment où l'écriture est déclenchée.
+ * Le store abonne `schedule` à chaque changement d'état (mises à jour
+ * immuables), puis on sérialise et compare le contenu avant d'écrire : deux
+ * notifications rapprochées ne produisent donc qu'une seule sauvegarde.
  *
  * Ne s'active qu'une fois l'application prête : sinon l'état par défaut
  * écraserait le document persisté avant sa restauration.
@@ -48,7 +47,7 @@ export function useProjectPersistence(enabled: boolean): void {
             timer = setTimeout(() => void flush(), DEBOUNCE_MS)
         }
 
-        // `set()` est appelé après chaque mutation profonde (via `_rev`).
+        // Chaque mise à jour immuable notifie les abonnés du store.
         const unsubscribe = useNotebookStore.subscribe(schedule)
 
         const flushNow = () => {

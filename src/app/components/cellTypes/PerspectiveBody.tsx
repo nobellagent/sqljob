@@ -9,14 +9,14 @@ import { ResultInfo } from './shared'
 import type {CellBodyBaseProps} from './types'
 
 export const PerspectiveBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }) => {
-    const { devMode, showSqlEditorVisible, hasCellHeight, renderPerspectiveInContainer, runCellAt, refreshDuckdbTables, _rev } = useNotebookStore(useShallow(s => ({
+    const { devMode, showSqlEditorVisible, hasCellHeight, renderPerspectiveInContainer, runCellAt, refreshDuckdbTables, updateCellById } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         showSqlEditorVisible: s.showSqlEditorVisible,
         hasCellHeight: s.hasCellHeight,
         renderPerspectiveInContainer: s.renderPerspectiveInContainer,
         runCellAt: s.runCellAt,
         refreshDuckdbTables: s.refreshDuckdbTables,
-        _rev: s._rev
+        updateCellById: s.updateCellById,
     })))
 
     const [sqlBlockUiMode, setSqlBlockUiMode] = useState(false)
@@ -39,11 +39,13 @@ export const PerspectiveBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellI
         if (!viewer) return
         if (cell._arrowTable && !cell._perspectiveScheduled && !cell._perspectiveRendering && !cell._perspectiveTable) {
             renderPerspectiveInContainer(cell).catch((e: any) => {
-                cell._perspectiveReady = false
-                cell._resultInfo = '❌ ' + e.message
+                updateCellById(cell._id, (c: any) => {
+                    c._perspectiveReady = false
+                    c._resultInfo = '❌ ' + e.message
+                })
             })
         }
-    }, [_rev])
+    }, [cell])
 
     const mh = '400px'
     const hasHeight = hasCellHeight?.(cell)

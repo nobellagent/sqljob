@@ -7,11 +7,11 @@ import { ResultInfo } from './shared'
 import type {CellBodyBaseProps} from './types'
 
 export const PdfmeBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }) => {
-    const { runCellAt, isLoading, devMode, forceUpdate } = useNotebookStore(useShallow(s => ({
+    const { runCellAt, isLoading, devMode, updateCellById } = useNotebookStore(useShallow(s => ({
         runCellAt: s.runCellAt,
         isLoading: s.isLoading,
         devMode: s.devMode,
-        forceUpdate: s.forceUpdate
+        updateCellById: s.updateCellById
     })))
 
     return (
@@ -56,7 +56,7 @@ export const PdfmeBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }
                                 style={{ minHeight: '180px' }}
                                 placeholder='{"basePdf": {...}, "schemas": [...]}'
                                 value={(cell.json as unknown as string | undefined) || ''}
-                                onChange={e => { cell.json = e.target.value as unknown as Record<string, unknown>; forceUpdate() }}
+                                onChange={e => { const v = e.target.value; updateCellById(cell._id, (c: any) => { c.json = v }) }}
                             />
                         </AccordionContent>
                     </AccordionItem>

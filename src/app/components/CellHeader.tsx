@@ -18,7 +18,7 @@ export function CellHeader({ cell, path, cellIndex, group }: Props) {
         runCellAt, openCellConfig, openChildGroupModal,
         moveItemInGroup, deleteCellAt, copyCellAt,
         isFirstInGroup, isLastInGroup,
-        validateCellName, forceUpdate, _rev
+        validateCellName, updateCellAt
     } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         isLoading: s.isLoading,
@@ -31,8 +31,7 @@ export function CellHeader({ cell, path, cellIndex, group }: Props) {
         isFirstInGroup: s.isFirstInGroup,
         isLastInGroup: s.isLastInGroup,
         validateCellName: s.validateCellName,
-        forceUpdate: s.forceUpdate,
-        _rev: s._rev
+        updateCellAt: s.updateCellAt,
     })))
 
     const [copyDone, setCopyDone] = useState(false)
@@ -60,11 +59,10 @@ export function CellHeader({ cell, path, cellIndex, group }: Props) {
     const commitEdit = () => {
         const trimmed = editVal.trim()
         if (trimmed && trimmed !== cell.name) {
-            cell.name = trimmed
+            updateCellAt(path, cellIndex, (c: any) => { c.name = trimmed })
             validateCellName(path, cellIndex)
         }
         setIsEditing(false)
-        forceUpdate()
     }
 
     const cancelEdit = () => setIsEditing(false)

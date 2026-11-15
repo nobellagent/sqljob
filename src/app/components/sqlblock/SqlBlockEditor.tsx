@@ -80,13 +80,32 @@ import { SqlDataTable } from '../SqlDataTable'
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-/** Retourne queries[0] (avec migration depuis cell.json si nécessaire). */
+/**
+ * Lecture de la configuration SQL block : jamais de mutation (un rendu ne doit
+ * pas écrire dans l'état). Applique les valeurs par défaut sur une copie.
+ */
 function getOrInitConfig(cell: any): SqlBlockConfig {
+    const q: any = cell.queries?.[0] ?? {}
+    // Migration depuis cell.json (anciens sqlBlock), en lecture
+    const legacy = cell.json?.ast && !q.ast ? cell.json : null
+    const ast = q.ast ?? legacy?.ast ?? { source: '', steps: [], materialized: cell.materialized ?? 'ephemeral' }
+    return {
+        ...q,
+        ast,
+        degraded: q.degraded ?? legacy?.degraded ?? false,
+        manualSql: q.manualSql ?? legacy?.manualSql ?? null,
+    } as SqlBlockConfig
+}
+
+/**
+ * Écriture de la configuration SQL block, à n'utiliser que dans un brouillon
+ * immer (`apply(c => …)`) : garantit queries[0] puis applique `fn`.
+ */
+function mutateSqlBlockConfig(cell: any, fn: (cfg: any) => void) {
     if (!cell.queries?.length) {
         cell.queries = [{ name: 'main', sql: '', engine: 'sql', showQueryEditor: false }]
     }
     const q = cell.queries[0]
-    // Migration depuis cell.json (anciens sqlBlock)
     if (cell.json?.ast && !q.ast) {
         q.ast = cell.json.ast
         q.degraded = cell.json.degraded ?? false
@@ -96,21 +115,23 @@ function getOrInitConfig(cell: any): SqlBlockConfig {
     if (!q.ast) q.ast = { source: '', steps: [], materialized: cell.materialized ?? 'ephemeral' }
     if (q.degraded === undefined) q.degraded = false
     if (q.manualSql === undefined) q.manualSql = null
-    return q
+    fn(q)
 }
 
-function commitAstUpdate(cell: any, newAst: Partial<SqlBlockAst>, forceUpdate: () => void) {
-    const cfg = getOrInitConfig(cell)
-    cfg.ast = { ...cfg.ast, ...newAst }
-    cfg.degraded = false
-    cfg.manualSql = null
-    // Stocker le SQL avec DDL si view/table — cohérent avec l'éditeur SQL en mode non-UI
-    // L'exécution stripe le préfixe DDL avant de ré-appliquer via cell.materialize
-    const selectSql = astToSql(cfg.ast)
-    cfg.sql = buildDisplaySql(cell.name, selectSql, cfg.ast.materialized ?? 'ephemeral')
+type ApplyCell = (fn: (cell: any) => void) => void
+
+function commitAstUpdate(cell: any, newAst: Partial<SqlBlockAst>, apply: ApplyCell) {
+    apply(c => mutateSqlBlockConfig(c, (cfg: any) => {
+        cfg.ast = { ...cfg.ast, ...newAst }
+        cfg.degraded = false
+        cfg.manualSql = null
+        // Stocker le SQL avec DDL si view/table — cohérent avec l'éditeur SQL en mode non-UI
+        // L'exécution stripe le préfixe DDL avant de ré-appliquer via cell.materialize
+        const selectSql = astToSql(cfg.ast)
+        cfg.sql = buildDisplaySql(cell.name, selectSql, cfg.ast.materialized ?? 'ephemeral')
+    }))
     // Sync cell.materialized avec l'AST
-    if (newAst.materialized !== undefined) cell.materialized = newAst.materialized
-    forceUpdate()
+    if (newAst.materialized !== undefined) apply(c => { c.materialized = newAst.materialized })
 }
 
 // ─── computeStepSchemas ───────────────────────────────────────────────────────
@@ -2591,10 +2612,8 @@ function IncompatibleConfirmModal({ onConfirm, onCancel }: { onConfirm: () => vo
 // ─── ChartPreviewInEditor — aperçu ECharts/KPI dans le panel dtSection ────────
 
 function ChartPreviewInEditor({ cell }: { cell: any }) {
-    const { _rev } = useNotebookStore(useShallow(s => ({ _rev: s._rev })))
     const chartRef = useRef<HTMLDivElement>(null)
     // Ne re-rendre le graphique que si _echartsOption a changé (nouvelle référence produite par runCellAt).
-    // Évite un setOption avec l'ancien option à chaque commitAstUpdate (qui incrémente _rev sans runCellAt).
     const lastRenderedOption = useRef<any>(null)
 
     useEffect(() => {
@@ -2608,7 +2627,7 @@ function ChartPreviewInEditor({ cell }: { cell: any }) {
             chart.clear()
             chart.setOption(cell._echartsOption)
         })
-    }, [_rev, cell._echartsOption])
+    }, [cell._echartsOption])
 
     if (cell._kpiHtml) return (
         <div className="overflow-auto text-center">
@@ -2629,12 +2648,17 @@ function ChartPreviewInEditor({ cell }: { cell: any }) {
 // ─── SqlBlockEditor (composant principal) ─────────────────────────────────────
 
 export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCell, skipExecution, modalOpen, allowedMaterializeModes, openVizConfigTrigger }: { cell: any; path: number[]; cellIndex: number; onExitUiMode?: () => void; fromSqlCell?: boolean; skipExecution?: boolean; modalOpen?: boolean; allowedMaterializeModes?: string[]; openVizConfigTrigger?: number }) {
-    const { forceUpdate, _duckdbTables, db, runCellAt } = useNotebookStore(useShallow(s => ({
-        forceUpdate: s.forceUpdate,
+    const { updateCellAt, _duckdbTables, db, runCellAt } = useNotebookStore(useShallow(s => ({
+        updateCellAt: s.updateCellAt,
         _duckdbTables: s._duckdbTables,
         db: s.db,
         runCellAt: s.runCellAt,
     })))
+
+    /** Applique un mutateur à cette cellule, de façon immuable. */
+    const apply = useCallback((fn: (c: any) => void) => {
+        updateCellAt(path, cellIndex, fn)
+    }, [updateCellAt, path, cellIndex])
 
     const cfg: SqlBlockConfig = getOrInitConfig(cell)
     const ast = cfg.ast
@@ -2682,14 +2706,14 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
     // ─── Handlers AST ──────────────────────────────────────────────────────
 
     const handleSourceChange = useCallback((v: string) => {
-        commitAstUpdate(cell, { source: v }, forceUpdate)
-    }, [cell, forceUpdate])
+        commitAstUpdate(cell, { source: v }, apply)
+    }, [cell, apply])
 
     // Auto-sélection de la première table lors de la création d'une cellule sans source
     useEffect(() => {
         if (!ast.source) {
             const tables = Object.keys(_duckdbTables ?? {}).filter(t => !t.startsWith('_sqlblock.'))
-            if (tables.length > 0) commitAstUpdate(cell, { source: tables[0] }, forceUpdate)
+            if (tables.length > 0) commitAstUpdate(cell, { source: tables[0] }, apply)
         }
     }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -2698,27 +2722,27 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
 
     const handleStepUpdate = useCallback((idx: number, newStep: SqlBlockStep) => {
         invalidateFrom(idx + 1, ast)   // les schémas en aval sont périmés
-        commitAstUpdate(cell, { steps: ast.steps.map((s, i) => i === idx ? newStep : s) }, forceUpdate)
-    }, [cell, ast, forceUpdate, invalidateFrom])
+        commitAstUpdate(cell, { steps: ast.steps.map((s, i) => i === idx ? newStep : s) }, apply)
+    }, [cell, ast, apply, invalidateFrom])
 
     const handleStepRemove = useCallback((idx: number) => {
         setConfigOpenIdx(null) // ferme la modale avant de supprimer le step (évite removeChild sur portal)
-        commitAstUpdate(cell, { steps: ast.steps.filter((_, i) => i !== idx) }, forceUpdate)
-    }, [cell, ast.steps, forceUpdate])
+        commitAstUpdate(cell, { steps: ast.steps.filter((_, i) => i !== idx) }, apply)
+    }, [cell, ast.steps, apply])
 
     const handleStepMove = useCallback((idx: number, dir: -1 | 1) => {
         setConfigOpenIdx(null) // ferme la modale avant de déplacer le step
         const s = [...ast.steps]; const swap = idx + dir
         if (swap < 0 || swap >= s.length) return
         ;[s[idx], s[swap]] = [s[swap], s[idx]]
-        commitAstUpdate(cell, { steps: s }, forceUpdate)
-    }, [cell, ast.steps, forceUpdate])
+        commitAstUpdate(cell, { steps: s }, apply)
+    }, [cell, ast.steps, apply])
 
     const handleStepAdd = useCallback((step: SqlBlockStep) => {
         const newSteps = [...ast.steps, step]
-        commitAstUpdate(cell, { steps: newSteps }, forceUpdate)
+        commitAstUpdate(cell, { steps: newSteps }, apply)
         // Pas d'ouverture auto du modal de config — l'étape a déjà été configurée dans AddStepModal
-    }, [cell, ast.steps, forceUpdate])
+    }, [cell, ast.steps, apply])
 
     // Schéma "propre" pour ChartConfigEditor : colonnes AVANT les annotations chart
     // (défini ici avant handleChartConfigChange pour éviter le TDZ dans les deps)
@@ -2745,10 +2769,10 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
     const handleChartConfigChange = useCallback((cfg: ChartConfig | null) => {
         // Invalide le cache des schémas dynamiques : chartConfig change le SQL final
         invalidateFrom(0, ast)
-        commitAstUpdate(cell, { chartConfig: cfg ?? undefined }, forceUpdate)
+        commitAstUpdate(cell, { chartConfig: cfg ?? undefined }, apply)
         if (cfg) fetchChartSchema()
         // runCellAt est déclenché à la fermeture de la modale (handleVizConfigClose), pas ici
-    }, [cell, ast, forceUpdate, invalidateFrom, fetchChartSchema])
+    }, [cell, ast, apply, invalidateFrom, fetchChartSchema])
 
     const handleOutputModeChange = useCallback(async (mode: string) => {
         // Quitter view/table → supprimer silencieusement l'objet DuckDB existant
@@ -2762,8 +2786,8 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
                 }
             } catch (_) { /* silencieux */ }
         }
-        commitAstUpdate(cell, { materialized: mode as SqlBlockMaterialize }, forceUpdate)
-    }, [cell, ast.materialized, forceUpdate])
+        commitAstUpdate(cell, { materialized: mode as SqlBlockMaterialize }, apply)
+    }, [cell, ast.materialized, apply])
 
     // ─── Distinct values pour le filtre (par step) ─────────────────────────
     // Fabrique une fonction fetchDistinctValues qui interroge la sous-requête
@@ -2803,21 +2827,21 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
         const stmts = newSql.split(';').map((s: string) => s.trim()).filter(Boolean)
         const nonLabelStmts = stmts.filter((s: string) => !/^\s*SELECT\s+.+?::(?:LABEL|SUBLABEL|ICON)\b/i.test(s))
         if (nonLabelStmts.length > 1) {
-            const cfg = getOrInitConfig(cell)
-            cfg.degraded = true; cfg.manualSql = newSql
-            cfg.sql = buildDisplaySql(cell.name, newSql, cfg.ast?.materialized ?? 'ephemeral')
+            apply(c => mutateSqlBlockConfig(c, (cfg: any) => {
+                cfg.degraded = true; cfg.manualSql = newSql
+                cfg.sql = buildDisplaySql(cell.name, newSql, cfg.ast?.materialized ?? 'ephemeral')
+            }))
             setMultiSqlWarning(true)
-            forceUpdate()
             return
         }
         setMultiSqlWarning(false)
         const result = sqlToAstSmart(newSql, ast.materialized)
         if (result.compatible && result.ast) {
-            const cfg = getOrInitConfig(cell)
-            cfg.ast = result.ast; cfg.degraded = false; cfg.manualSql = null
-            const genSql = astToSql(result.ast)
-            cfg.sql = buildDisplaySql(cell.name, genSql, result.ast.materialized ?? 'ephemeral')
-            forceUpdate()
+            apply(c => mutateSqlBlockConfig(c, (cfg: any) => {
+                cfg.ast = result.ast; cfg.degraded = false; cfg.manualSql = null
+                const genSql = astToSql(result.ast)
+                cfg.sql = buildDisplaySql(cell.name, genSql, result.ast.materialized ?? 'ephemeral')
+            }))
             runCellAt(path, cellIndex)
         } else {
             setPendingDegradedSql(newSql)
@@ -2826,10 +2850,11 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
 
     function confirmDegraded() {
         if (!pendingDegradedSql) return
-        const cfg = getOrInitConfig(cell)
-        cfg.degraded = true; cfg.manualSql = pendingDegradedSql
-        cfg.sql = buildDisplaySql(cell.name, pendingDegradedSql, cfg.ast?.materialized ?? 'ephemeral')
-        setPendingDegradedSql(null); forceUpdate()
+        apply(c => mutateSqlBlockConfig(c, (cfg: any) => {
+            cfg.degraded = true; cfg.manualSql = pendingDegradedSql
+            cfg.sql = buildDisplaySql(cell.name, pendingDegradedSql, cfg.ast?.materialized ?? 'ephemeral')
+        }))
+        setPendingDegradedSql(null)
         runCellAt(path, cellIndex)
     }
 
@@ -2845,10 +2870,11 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
         }
         const result = sqlToAstSmart(sql, ast.materialized)
         if (result.compatible && result.ast) {
-            cfg.ast = result.ast; cfg.degraded = false; cfg.manualSql = null
-            const genSql = astToSql(result.ast)
-            cfg.sql = buildDisplaySql(cell.name, genSql, result.ast.materialized ?? 'ephemeral')
-            forceUpdate()
+            apply(c => mutateSqlBlockConfig(c, (cfgInner: any) => {
+                cfgInner.ast = result.ast; cfgInner.degraded = false; cfgInner.manualSql = null
+                const genSql = astToSql(result.ast)
+                cfgInner.sql = buildDisplaySql(cell.name, genSql, result.ast.materialized ?? 'ephemeral')
+            }))
         } else {
             alert(`Impossible de restaurer l'AST : ${result.error || 'SQL incompatible'}`)
         }
@@ -2879,17 +2905,18 @@ export function SqlBlockEditor({ cell, path, cellIndex, onExitUiMode, fromSqlCel
             const hasCustomSql = result.ast?.steps?.some((s: any) => s.type === 'custom_sql')
             const hasColumns = (result.ast?.chartConfig?.columns?.length ?? 0) > 0
             if (result.compatible && result.ast && hasColumns) {
-                if (!hasCustomSql) {
-                    // Parse propre (ex: SELECT littéraux ::KPI FROM (SELECT 1)) → mettre à jour tout l'AST
-                    currentCfg.ast = result.ast
-                    currentCfg.degraded = false
-                    currentCfg.manualSql = null
-                } else {
-                    // Parse partiel (fallback CTE) → uniquement le chartConfig,
-                    // sans toucher source/steps pour éviter le double-WITH
-                    currentCfg.ast = { ...currentCfg.ast, chartConfig: result.ast.chartConfig }
-                }
-                forceUpdate()
+                apply(c => mutateSqlBlockConfig(c, (currentCfg: any) => {
+                    if (!hasCustomSql) {
+                        // Parse propre (ex: SELECT littéraux ::KPI FROM (SELECT 1)) → mettre à jour tout l'AST
+                        currentCfg.ast = result.ast
+                        currentCfg.degraded = false
+                        currentCfg.manualSql = null
+                    } else {
+                        // Parse partiel (fallback CTE) → uniquement le chartConfig,
+                        // sans toucher source/steps pour éviter le double-WITH
+                        currentCfg.ast = { ...currentCfg.ast, chartConfig: result.ast.chartConfig }
+                    }
+                }))
                 // fetchChartSchema sera rappelé via l'effect stepsKey/source après le re-render
                 setVizConfigOpen(true)
                 return

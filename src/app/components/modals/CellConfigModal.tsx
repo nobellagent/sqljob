@@ -19,25 +19,32 @@ import { Icon } from '../../../lib/icons'
 import { UniverConfigEditor, getCommonParamDef, getCommonParamsExcludingName, getSpecificParamsForType } from './UniverConfigEditor'
 export function CellConfigModal() {
     const {
-        cellConfigModal, closeCellConfig, getCellAtPath,
+        cellConfigModal, closeCellConfig,
         onCellTypeChange, validateCellName, syncMarkdownToEditor,
-        getCellValueByPath, setCellValueByPath, isLoading, forceUpdate, _rev
+        getCellValueByPath, isLoading, updateCellAt
     } = useNotebookStore(useShallow(s => ({
         cellConfigModal: s.cellConfigModal,
         closeCellConfig: s.closeCellConfig,
-        getCellAtPath: s.getCellAtPath,
         onCellTypeChange: s.onCellTypeChange,
         validateCellName: s.validateCellName,
         syncMarkdownToEditor: s.syncMarkdownToEditor,
         getCellValueByPath: s.getCellValueByPath,
-        setCellValueByPath: s.setCellValueByPath,
         isLoading: s.isLoading,
-        forceUpdate: s.forceUpdate,
-        _rev: s._rev
+        updateCellAt: s.updateCellAt,
     })))
 
     const open = cellConfigModal.open
-    const cell = open ? getCellAtPath(cellConfigModal.path, cellConfigModal.cellIndex) : null
+    // Cellule lue depuis l'état : chaque mise à jour immuable change sa référence.
+    const cell = useNotebookStore(s => (s.cellConfigModal.open
+        ? s.getCellAtPath(s.cellConfigModal.path, s.cellConfigModal.cellIndex)
+        : null))
+
+    /** Applique un mutateur à la cellule ouverte, de façon immuable. */
+    const apply = (fn: (c: any) => void) => {
+        if (cellConfigModal.path) updateCellAt(cellConfigModal.path, cellConfigModal.cellIndex, fn)
+    }
+    /** Écrit une valeur par chemin (`queries.main.sql`, `json.x`…). */
+    const setValue = (key: string, value: any) => apply(c => CellConfigService.setCellValueByPath(c, key, value))
 
     const specificParams = cell ? getSpecificParamsForType(cell.type) : []
     const commonParamKeys = cell ? ['name', ...getCommonParamsExcludingName(cell.type)] : []
@@ -67,9 +74,8 @@ export function CellConfigModal() {
                                 value={cell.type}
                                 onValueChange={v => {
                                     const oldType = cell.type
-                                    cell.type = v
+                                    apply(c => { c.type = v })
                                     onCellTypeChange(cellConfigModal.path, cellConfigModal.cellIndex, oldType)
-                                    forceUpdate()
                                 }}
                             >
                                 <SelectTrigger className="h-8 text-sm w-full">
@@ -107,7 +113,7 @@ export function CellConfigModal() {
                                             onChange={e => {
                                                 const v = e.target.value
                                                 if (cell.type === 'uiParameter' && v.trim().toLowerCase() === 'subquery') return
-                                                cell.name = v; forceUpdate()
+                                                apply(c => { c.name = v })
                                             }}
                                             onBlur={() => validateCellName(cellConfigModal.path, cellConfigModal.cellIndex)}
                                             placeholder="Identifiant unique de la cellule" />
@@ -120,7 +126,7 @@ export function CellConfigModal() {
                                         <Label>{getCommonParamDef(paramKey, cell.type)?.label || paramKey}</Label>
                                         <Input className="h-8 text-sm"
                                             value={getCellValueByPath(cell, paramKey) || ''}
-                                            onChange={e => { setCellValueByPath(cell, paramKey, e.target.value); forceUpdate() }}
+                                            onChange={e => setValue(paramKey, e.target.value)}
                                             placeholder={getCommonParamDef(paramKey, cell.type)?.placeholder || ''} />
                                     </div>
                                 ) : null}
@@ -135,7 +141,7 @@ export function CellConfigModal() {
                                     <div className="flex items-center gap-3 mb-3">
                                         <Checkbox
                                             checked={cell.border !== false}
-                                            onCheckedChange={v => { cell.border = !!v; forceUpdate() }}
+                                            onCheckedChange={v => apply(c => { c.border = !!v })}
                                         />
                                         <Label className="cursor-pointer">Afficher bordure et ombre</Label>
                                     </div>
@@ -146,7 +152,7 @@ export function CellConfigModal() {
                                                 <Label className="text-xs">{k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</Label>
                                                 <Input className="h-7 text-xs"
                                                     value={(cell[k] as string | undefined) || ''}
-                                                    onChange={e => { cell[k] = e.target.value; forceUpdate() }} />
+                                                    onChange={e => { const v = e.target.value; apply(c => { c[k] = v }) }} />
                                             </div>
                                         ))}
                                         <div className="col-span-2 font-medium text-sm mt-1">Hauteur</div>
@@ -155,7 +161,7 @@ export function CellConfigModal() {
                                                 <Label className="text-xs">{k.replace(/([A-Z])/g, ' $1').replace(/^./, s => s.toUpperCase())}</Label>
                                                 <Input className="h-7 text-xs"
                                                     value={(cell[k] as string | undefined) || ''}
-                                                    onChange={e => { cell[k] = e.target.value; forceUpdate() }} />
+                                                    onChange={e => { const v = e.target.value; apply(c => { c[k] = v }) }} />
                                             </div>
                                         ))}
                                     </div>
@@ -170,7 +176,7 @@ export function CellConfigModal() {
                                     <div className="flex items-center gap-3">
                                         <Checkbox
                                             checked={(() => { const v = getCellValueByPath(cell, param.key); return v === undefined ? (param.defaultValue === true) : !!v; })()}
-                                            onCheckedChange={v => { setCellValueByPath(cell, param.key, !!v); forceUpdate() }}
+                                            onCheckedChange={v => setValue(param.key, !!v)}
                                         />
                                         <Label className="cursor-pointer">{param.label}</Label>
                                     </div>
@@ -179,7 +185,7 @@ export function CellConfigModal() {
                                         <Label>{param.label}</Label>
                                         <Select
                                             value={getCellValueByPath(cell, param.key) || ''}
-                                            onValueChange={v => { setCellValueByPath(cell, param.key, v); forceUpdate() }}
+                                            onValueChange={v => setValue(param.key, v)}
                                         >
                                             <SelectTrigger className="h-8 text-sm w-full">
                                                 <SelectValue />
@@ -202,12 +208,11 @@ export function CellConfigModal() {
                                             onChange={e => {
                                                 const val = e.target.value
                                                 if (param.key === 'content') {
-                                                    setCellValueByPath(cell, 'content', val)
+                                                    setValue('content', val)
                                                     syncMarkdownToEditor(cellConfigModal.path, cellConfigModal.cellIndex)
                                                 } else {
-                                                    setCellValueByPath(cell, param.key, val)
+                                                    setValue(param.key, val)
                                                 }
-                                                forceUpdate()
                                             }}
                                         />
                                     </div>
@@ -216,12 +221,12 @@ export function CellConfigModal() {
                                         <Label>{param.label}</Label>
                                         <Input type="number" className="h-8 text-sm"
                                             value={getCellValueByPath(cell, param.key) || 0}
-                                            onChange={e => { setCellValueByPath(cell, param.key, parseFloat(e.target.value) || 0); forceUpdate() }}
+                                            onChange={e => setValue(param.key, parseFloat(e.target.value) || 0)}
                                             placeholder={param.placeholder}
                                             min={param.min} step="any" />
                                     </div>
                                 ) : param.inputType === 'univerConfig' ? (
-                                    <UniverConfigEditor cell={cell} forceUpdate={forceUpdate} />
+                                    <UniverConfigEditor cell={cell} apply={apply} />
                                 ) : null}
                             </div>
                         ))}

@@ -26,19 +26,19 @@ function GroupDivider({ atIndex }: { atIndex: number }) {
 export function PageContent() {
     const {
         devMode, isLoading, showAddGroupModal,
-        getGroups, addGroup, activePageIndex, _rev
+        addGroup, activePageIndex
     } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         isLoading: s.isLoading,
         showAddGroupModal: s.showAddGroupModal,
-        getGroups: s.getGroups,
         addGroup: s.addGroup,
         activePageIndex: s.activePageIndex,
-        _rev: s._rev
     })))
     const set = useNotebookStore.setState
 
-    const groups = getGroups()
+    // Abonnement direct aux groupes de la page : chaque mise à jour immuable
+    // change la référence du tableau, ce qui suffit à re-rendre.
+    const groups = useNotebookStore(s => s.pages[s.activePageIndex]?.groups) ?? []
     const sortedGroups = [...groups].sort((a: any, b: any) => (a._order ?? 0) - (b._order ?? 0))
 
     return (

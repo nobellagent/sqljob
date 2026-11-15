@@ -12,9 +12,8 @@ import { ClipboardPaste } from 'lucide-react'
 
 // ─── TabsChild view ───────────────────────────────────────────────────────────
 function TabsChildContent({ group, path, depth }: { group: any, path: number[], depth: number }) {
-    const { getAllItemsSorted, _rev } = useNotebookStore(useShallow(s => ({
+    const { getAllItemsSorted } = useNotebookStore(useShallow(s => ({
         getAllItemsSorted: s.getAllItemsSorted,
-        _rev: s._rev
     })))
     const items = getAllItemsSorted?.(group) || []
     const [activeTab, setActiveTab] = useState(0)
@@ -86,7 +85,7 @@ export function GroupContainer({
         moveItemInGroup, deleteGroupAtPath,
         openLoopConfigModal, openGroupSettingsModal,
         copyGroupAtPath, pasteToGroup, _clipboardItem,
-        isFirstInGroup, isLastInGroup, forceUpdate, _rev
+        isFirstInGroup, isLastInGroup, updateGroupAt
     } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         isLoading: s.isLoading,
@@ -107,8 +106,7 @@ export function GroupContainer({
         _clipboardItem: s._clipboardItem,
         isFirstInGroup: s.isFirstInGroup,
         isLastInGroup: s.isLastInGroup,
-        forceUpdate: s.forceUpdate,
-        _rev: s._rev
+        updateGroupAt: s.updateGroupAt,
     })))
 
     const [copyDone, setCopyDone] = useState(false)
@@ -160,7 +158,7 @@ export function GroupContainer({
                                 <DropdownMenuItem onClick={() => runGroupAtPath(path)} disabled={isLoading}>
                                     <Icon name="play-arrow" size={14} className="mr-2" /> Exécuter le groupe
                                 </DropdownMenuItem>
-                                <DropdownMenuItem onClick={() => { group.direction = group.direction === 'column' ? 'row' : 'column'; forceUpdate() }}>
+                                <DropdownMenuItem onClick={() => updateGroupAt(path, (g: any) => { g.direction = g.direction === 'column' ? 'row' : 'column' })}>
                                     <Icon name={group.direction === 'column' ? 'swap-vert' : 'swap-horiz'} size={14} className="mr-2" />
                                     {group.direction === 'column' ? 'Passer en ligne' : 'Passer en colonne'}
                                 </DropdownMenuItem>
@@ -206,7 +204,7 @@ export function GroupContainer({
                                 <Icon name="play-arrow" size={16} />
                             </button>
                             <button className="inline-flex items-center justify-center h-6 px-2 text-xs bg-background hover:bg-muted"
-                                onClick={() => { group.direction = group.direction === 'column' ? 'row' : 'column'; forceUpdate() }}
+                                onClick={() => updateGroupAt(path, (g: any) => { g.direction = g.direction === 'column' ? 'row' : 'column' })}
                                 title={group.direction === 'column' ? 'Passer en ligne' : 'Passer en colonne'}>
                                 <Icon name={group.direction === 'column' ? 'swap-vert' : 'swap-horiz'} size={16} />
                             </button>
@@ -270,7 +268,7 @@ export function GroupContainer({
 function GroupContent({ group, path, depth }: { group: any, path: number[], depth: number }) {
     const {
         getSortedCells, getSortedChildren, getAllItemsSorted,
-        shouldShowGroup, shouldShowCell, devMode, forceUpdate, _rev
+        shouldShowGroup, shouldShowCell, devMode
     } = useNotebookStore(useShallow(s => ({
         getSortedCells: s.getSortedCells,
         getSortedChildren: s.getSortedChildren,
@@ -278,8 +276,7 @@ function GroupContent({ group, path, depth }: { group: any, path: number[], dept
         shouldShowGroup: s.shouldShowGroup,
         shouldShowCell: s.shouldShowCell,
         devMode: s.devMode,
-        forceUpdate: s.forceUpdate,
-        _rev: s._rev
+        updateGroupAt: s.updateGroupAt,
     })))
 
     const isColumn = group.direction === 'column'

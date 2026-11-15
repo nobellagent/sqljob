@@ -6,6 +6,11 @@ import { CELL_TYPE_SCHEMAS } from '../../../lib/cellTypeSchemas'
 import { useConfirmModal } from '../uiStores'
 import type { NotebookStoreState } from '../types'
 import { createCellSizingActions } from './cells/sizing'
+import { produce } from 'immer'
+
+/** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
+const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
+import { getCellInDraft, getGroupInDraft } from '../mutations'
 
 export const createCellsSlice = (
     set: StoreApi<NotebookStoreState>['setState'],
@@ -68,25 +73,27 @@ return newCell
     addGroup(cellType: string) {
         const newGroup = get().createNewGroup('row')
         newGroup.cells = [get().createNewCell(cellType)]
-        const groups = get().getGroups()
-        const maxOrder = groups.length > 0 ? Math.max(...groups.map((g: any) => g._order ?? 0)) : -1
-        newGroup._order = maxOrder + 1
-        groups.push(newGroup)
-        set({ showAddGroupModal: false })
-        set((s: any) => ({ _rev: s._rev + 1 }))
+        set((state: any) => immer(state, (draft: any) => {
+            const groups = draft.pages[draft.activePageIndex].groups
+            const maxOrder = groups.length > 0 ? Math.max(...groups.map((g: any) => g._order ?? 0)) : -1
+            newGroup._order = maxOrder + 1
+            groups.push(newGroup)
+            draft.showAddGroupModal = false
+        }))
     },
 
     addCellToGroup(pathOrIndex: any, cellType: string) {
         const path = Array.isArray(pathOrIndex) ? pathOrIndex : [pathOrIndex]
-        const group = get().getGroupAtPath(path)
-        if (group) {
-            if (!group.cells) group.cells = []
-            const newCell = get().createNewCell(cellType)
-            newCell._order = get().getNextOrder(group)
-            group.cells.push(newCell)
-        }
-        set({ addCellToGroupModal: { open: false, path: null } })
-        set((s: any) => ({ _rev: s._rev + 1 }))
+        const newCell = get().createNewCell(cellType)
+        set((state: any) => immer(state, (draft: any) => {
+            const group = getGroupInDraft(draft, path)
+            if (group) {
+                if (!group.cells) group.cells = []
+                newCell._order = get().getNextOrder(group)
+                group.cells.push(newCell)
+            }
+            draft.addCellToGroupModal = { open: false, path: null }
+        }))
     },
 
     openAddCellToGroupModal(pathOrIndex: any) {
@@ -101,17 +108,16 @@ return newCell
     insertGroupAt(atIndex: number, cellType: string) {
         const newGroup = get().createNewGroup('row')
         newGroup.cells = [get().createNewCell(cellType)]
-
-        // Renuméroter les groupes existants par ordre trié, puis décaler
-        // ceux à partir de atIndex pour faire de la place au nouveau.
-        const groups = get().getGroups()
-        const sorted = [...groups].sort((a: any, b: any) => (a._order ?? 0) - (b._order ?? 0))
-        sorted.forEach((g: any, i: number) => { g._order = i >= atIndex ? i + 1 : i })
-        newGroup._order = atIndex
-
-        groups.push(newGroup)
-        set({ insertGroupModal: { open: false, atIndex: null } })
-        set((s: any) => ({ _rev: s._rev + 1 }))
+        set((state: any) => immer(state, (draft: any) => {
+            const groups = draft.pages[draft.activePageIndex].groups
+            // Renuméroter les groupes existants par ordre trié, puis décaler
+            // ceux à partir de atIndex pour faire de la place au nouveau.
+            const sorted = [...groups].sort((a: any, b: any) => (a._order ?? 0) - (b._order ?? 0))
+            sorted.forEach((g: any, i: number) => { g._order = i >= atIndex ? i + 1 : i })
+            newGroup._order = atIndex
+            groups.push(newGroup)
+            draft.insertGroupModal = { open: false, atIndex: null }
+        }))
     },
 
     openInsertCellModal(pathOrIndex: any, atCellIndex: number) {
@@ -121,15 +127,16 @@ return newCell
 
     insertCellAt(pathOrIndex: any, atCellIndex: number, cellType: string) {
         const path = Array.isArray(pathOrIndex) ? pathOrIndex : [pathOrIndex]
-        const group = get().getGroupAtPath(path)
-        if (group) {
-            if (!group.cells) group.cells = []
-            const newCell = get().createNewCell(cellType)
-            newCell._order = get().getNextOrder(group)
-            group.cells.splice(atCellIndex, 0, newCell)
-        }
-        set({ insertCellModal: { open: false, path: null, atCellIndex: null } })
-        set((s: any) => ({ _rev: s._rev + 1 }))
+        const newCell = get().createNewCell(cellType)
+        set((state: any) => immer(state, (draft: any) => {
+            const group = getGroupInDraft(draft, path)
+            if (group) {
+                if (!group.cells) group.cells = []
+                newCell._order = get().getNextOrder(group)
+                group.cells.splice(atCellIndex, 0, newCell)
+            }
+            draft.insertCellModal = { open: false, path: null, atCellIndex: null }
+        }))
     },
 
     deleteGroup(pathOrIndex: any) {
@@ -161,9 +168,11 @@ return newCell
                     (_tables[cell._id] as any).destroy()
                     delete _tables[cell._id]
                 }
-                group.cells.splice(cellIndex, 1)
+                set((state: any) => immer(state, (draft: any) => {
+                    const target = getGroupInDraft(draft, path)
+                    if (target?.cells) target.cells.splice(cellIndex, 1)
+                }))
                 if (cell.type === 'source') await get().refreshDuckdbTables()
-                set((s: any) => ({ _rev: s._rev + 1 }))
             }
         }
     },
@@ -242,12 +251,13 @@ return newCell
 
     onCellTypeChange(pathOrIndex: any, cellIndex: number, oldType: string) {
         const path = Array.isArray(pathOrIndex) ? pathOrIndex : [pathOrIndex]
-        const cell = get().getCellAtPath(path, cellIndex)
+        const current = get().getCellAtPath(path, cellIndex)
+        if (!current) return
+        _rawTableDataStore.delete(current._id)
+        set((state: any) => immer(state, (draft: any) => {
+        const cell = getCellInDraft(draft, path, cellIndex)
         if (!cell) return
 
-        _rawTableDataStore.delete(cell._id)
-        // TODO: wrap in produce() once cell references are stored immutably
-        // (currently direct mutation + setAutoFreeze(false) pattern is used project-wide)
         cell._results = null
         cell._resultInfo = null
 
@@ -284,6 +294,7 @@ return newCell
             cell._perspectiveWorker = null
             cell._perspectiveTable = null
         }
+        }))
     },
 
     generateUniqueCellName(type: string, excludeId: string | null = null) {

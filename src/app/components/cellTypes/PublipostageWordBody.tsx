@@ -11,7 +11,7 @@ export const PublipostageWordBody: React.FC<CellBodyBaseProps> = ({ cell, path, 
     const {
         handleDocxTemplateDrop, handleDocxTemplateFileSelect,
         downloadDocxTemplate, removeDocxTemplate,
-        runCellAt, isLoading, devMode, forceUpdate
+        runCellAt, isLoading, devMode
     } = useNotebookStore(useShallow(s => ({
         handleDocxTemplateDrop: s.handleDocxTemplateDrop,
         handleDocxTemplateFileSelect: s.handleDocxTemplateFileSelect,
@@ -19,8 +19,7 @@ export const PublipostageWordBody: React.FC<CellBodyBaseProps> = ({ cell, path, 
         removeDocxTemplate: s.removeDocxTemplate,
         runCellAt: s.runCellAt,
         isLoading: s.isLoading,
-        devMode: s.devMode,
-        forceUpdate: s.forceUpdate
+        devMode: s.devMode
     })))
 
     const inputRef = useRef<HTMLInputElement>(null)

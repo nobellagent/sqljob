@@ -69,7 +69,6 @@ export type NotebookCell = {
     _status?: string | null
     _results?: Record<string, unknown>[] | null
     _resultInfo?: string | null
-    _rev?: number
     _markdownContent?: string
     _htmlContent?: string
     _statValue?: string

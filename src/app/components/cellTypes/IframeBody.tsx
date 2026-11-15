@@ -6,11 +6,10 @@ import {ResultInfo} from './shared'
 import type {CellBodyBaseProps} from './types'
 
 export const IframeBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }) => {
-    const { devMode, hasCellHeight, showSqlEditorVisible, _rev } = useNotebookStore(useShallow(s => ({
+    const { devMode, hasCellHeight, showSqlEditorVisible } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         hasCellHeight: s.hasCellHeight,
         showSqlEditorVisible: s.showSqlEditorVisible,
-        _rev: s._rev
     })))
 
     const iframeRef = useRef<HTMLIFrameElement>(null)
@@ -24,7 +23,7 @@ export const IframeBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex 
             doc.write(cell._htmlContent)
             doc.close()
         }
-    }, [cell._htmlContent, _rev])
+    }, [cell._htmlContent])
 
     const hasHeight = hasCellHeight(cell)
 

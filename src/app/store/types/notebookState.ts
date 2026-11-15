@@ -73,7 +73,6 @@ export interface CustomNotebookState {
     _tables: Record<string, unknown>
     _duckdbTables: Record<string, DuckdbTableInfo>
     _roomFiles: RoomFile[]
-    _rev: number
 
     // Clipboard
     _clipboardItem: { type: 'sqljob-cell' | 'sqljob-group'; data: unknown } | null
@@ -81,7 +80,12 @@ export interface CustomNotebookState {
     // ── Overrides / méthodes store ────────────────────────────────────────────
     addRoomFile: (file: File, tableName: string) => Promise<void>
     closeCellConfig: () => void
-    forceUpdate: () => void
+    /** Applique un mutateur immer à une cellule ciblée par chemin + index. */
+    updateCellAt: (path: number[], cellIndex: number, mutator: (cell: any) => void) => void
+    /** Applique un mutateur immer à un groupe ciblé par chemin. */
+    updateGroupAt: (path: number[], mutator: (group: any) => void) => void
+    /** Applique un mutateur immer à la cellule portant cet identifiant. */
+    updateCellById: (cellId: string, mutator: (cell: any) => void) => void
     saveToLocalStorage?: () => void
     initFromConfig: (loadedConfig: unknown) => void
     setPages: (pages: NotebookPage[]) => void

@@ -10,14 +10,13 @@ import type {CellBodyBaseProps} from './types'
 export const SourceBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }) => {
     const {
         handleSingleSourceDrop, handleSingleSourceFileSelect,
-        downloadSourceFile, removeSingleSourceFile, devMode, forceUpdate
+        downloadSourceFile, removeSingleSourceFile, devMode
     } = useNotebookStore(useShallow(s => ({
         handleSingleSourceDrop: s.handleSingleSourceDrop,
         handleSingleSourceFileSelect: s.handleSingleSourceFileSelect,
         downloadSourceFile: s.downloadSourceFile,
         removeSingleSourceFile: s.removeSingleSourceFile,
-        devMode: s.devMode,
-        forceUpdate: s.forceUpdate
+        devMode: s.devMode
     })))
 
     const inputRef = useRef<HTMLInputElement>(null)

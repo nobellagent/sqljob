@@ -2,10 +2,10 @@
  * Store Zustand principal — remplace notebookApp.ts + tous les mixins Alpine.
  *
  * Tous les mixins Alpine ont été convertis en slices Zustand purs.
- * forceUpdate() déclenche un re-render React après des mutations profondes.
+ * Toute écriture passe par une mise à jour immuable (voir `store/mutations.ts`) :
+ * une branche modifiée change de référence, React re-rend sans compteur de version.
  * createRoomShellSlice ajoute le système de layout mosaic (RoomShell).
  */
-import { setAutoFreeze } from 'immer'
 import { z } from 'zod'
 import { createRoomShellSlice, createRoomStore, persistSliceConfigs, LayoutConfig } from '@sqlrooms/room-shell'
 import type { NotebookStoreState } from './types'
@@ -26,6 +26,7 @@ import { createCellsSlice } from './slices/cellsSlice'
 import { createFilesSlice } from './slices/filesSlice'
 import { createExecutionSlice } from './slices/executionSlice'
 import { createCopyPasteSlice } from './slices/copyPasteSlice'
+import { createUpdateSlice } from './slices/updateSlice'
 import { ConfigManager, exportConfigToJson } from '../../lib/ConfigManager'
 import { applyThemeFromConfig, initCustomTheme } from '../components/modals/ThemeCustomModal'
 import { DuckDBManager } from '../../lib/DuckDBManager'
@@ -39,11 +40,8 @@ import { CELL_TYPE_SCHEMAS, CELL_TYPE_HANDLERS } from '../../lib/cellTypeSchemas
 import { formatValueForInputType } from '../../lib/utils'
 
 
-// TODO(produce-migration): setAutoFreeze(false) est un workaround pour permettre les
-// mutations directes sur les cellules (cell._status = 'running', cell._results = rows…)
-// dans executionSlice et les autres slices. La migration vers produce() dans chaque slice
-// permettrait de supprimer cette ligne, mais requiert une refonte architecturale complète.
-setAutoFreeze(false)
+// L'état est immuable : immer gèle les objets produits, donc toute écriture
+// directe hors `produce()` échoue bruyamment au lieu de passer inaperçue.
 
 // Dernière configuration chargée (Gist, JSON, URL). Module-scoped : aucun état
 // applicatif sur `window` — la valeur ne sert qu'à reconstruire le store.
@@ -132,6 +130,7 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
     const filesActions = createFilesSlice(set, get)
     const executionActions = createExecutionSlice(set, get)
     const copyPasteActions = createCopyPasteSlice(set, get)
+    const updateActions = createUpdateSlice(set, get)
 
     // Helper : parcourt l'arbre de layout (modèle 0.29) et cherche une clé de panneau
     function layoutHasPanel(node: any, key: string): boolean {
@@ -178,6 +177,7 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
         ...filesActions,
         ...executionActions,
         ...copyPasteActions,
+        ...updateActions,
 
         // db.schemaTrees démarre undefined dans DuckDbSlice.
         // deepEquals([], []) bloque la mise à jour si aucune table → schemaTrees reste undefined.
@@ -215,11 +215,6 @@ const { roomStore: _roomStore, useRoomStore: _useNotebookStore } = createRoomSto
         // Overrides de méthodes mixin qui font des mutations profondes (this.X.Y = val)
         // que le proxy ne peut pas intercepter — on remplace par des set() Zustand directs.
         closeCellConfig: () => set((s: any) => ({ cellConfigModal: { ...s.cellConfigModal, open: false } })),
-
-        // Déclenche un re-render React (utile après mutations profondes)
-        forceUpdate() {
-            set((s: any) => ({ _rev: s._rev + 1 }))
-        },
 
         // Ré-initialise le store depuis une config chargée (ex: après déchiffrement Gist)
         initFromConfig(loadedConfig: unknown) {

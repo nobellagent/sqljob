@@ -14,7 +14,7 @@ export const SqlTableBody: React.FC<SqlTableBodyProps> = ({ cell, path, cellInde
     const {
         devMode, hasCellHeight,
         showSqlEditorVisible, isSqlResultTabular, isSqlResultText,
-        getSqlResultAsText, forceUpdate, runCellAt, refreshDuckdbTables, _rev,
+        getSqlResultAsText, runCellAt, refreshDuckdbTables,
     } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         hasCellHeight: s.hasCellHeight,
@@ -22,10 +22,8 @@ export const SqlTableBody: React.FC<SqlTableBodyProps> = ({ cell, path, cellInde
         isSqlResultTabular: s.isSqlResultTabular,
         isSqlResultText: s.isSqlResultText,
         getSqlResultAsText: s.getSqlResultAsText,
-        forceUpdate: s.forceUpdate,
         runCellAt: s.runCellAt,
         refreshDuckdbTables: s.refreshDuckdbTables,
-        _rev: s._rev,
     })))
 
     // Lu directement depuis la cellule (pas via store) pour éviter les problèmes de ref stale.

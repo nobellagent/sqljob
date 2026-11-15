@@ -2,6 +2,11 @@ import type { StoreApi } from 'zustand'
 import { ConfigManager } from '../../../lib/ConfigManager'
 import { useConfirmModal } from '../uiStores'
 import type { NotebookStoreState } from '../types'
+import { produce } from 'immer'
+import { getGroupInDraft } from '../mutations'
+
+/** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
+const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
 
 export const createGroupsSlice = (
     set: StoreApi<NotebookStoreState>['setState'],
@@ -120,17 +125,18 @@ export const createGroupsSlice = (
     },
 
     addNestedGroup(path: any) {
-        const group = get().getGroupAtPath(path)
-        if (!group) return
-        if (!group.children) group.children = []
         const newChild = get().createNewGroup('row')
-        newChild._order = get().getNextOrder(group)
         const firstCell = get().createNewCell('markdown')
         firstCell._order = 0
         newChild.cells = [firstCell]
-        group.children.push(newChild)
+        set((state: any) => immer(state, (draft: any) => {
+            const group = getGroupInDraft(draft, path)
+            if (!group) return
+            if (!group.children) group.children = []
+            newChild._order = get().getNextOrder(group)
+            group.children.push(newChild)
+        }))
         get().setStatus('Sous-groupe ajouté', 'success')
-        set((s: any) => ({ _rev: s._rev + 1 }))
     },
 
     toggleGroupDirection(path: any) {
@@ -206,20 +212,19 @@ FROM source1 LIMIT 10;`
         const group = get().getGroupAtPath(path)
         const sourceCells = collectSourceCells(group)
 
-        if (path.length === 1) {
-            get().getGroups().splice(path[0], 1)
-        } else {
-            const parentPath = path.slice(0, -1)
-            const childIndex = path[path.length - 1]
-            const parent = get().getGroupAtPath(parentPath)
-            if (parent && parent.children) parent.children.splice(childIndex, 1)
-        }
+        set((state: any) => immer(state, (draft: any) => {
+            if (path.length === 1) {
+                draft.pages[draft.activePageIndex].groups.splice(path[0], 1)
+            } else {
+                const parent = getGroupInDraft(draft, path.slice(0, -1))
+                if (parent?.children) parent.children.splice(path[path.length - 1], 1)
+            }
+        }))
 
         for (const cell of sourceCells) await get().cleanupSourceCell(cell)
         if (sourceCells.length > 0) await get().refreshDuckdbTables()
 
         get().setStatus('Groupe supprimé', 'success')
-        set((s: any) => ({ _rev: s._rev + 1 }))
     },
 
     getLinkGroupById(groupId: string) {
@@ -359,32 +364,31 @@ FROM source1 LIMIT 10;`
     },
 
     moveItemInGroup(path: any, itemType: string, originalIndex: number, direction: number) {
-        const activePage = get().getActivePage()
-        const group = (!path || path.length === 0)
-            ? { children: activePage?.groups || [] } as unknown as import('../types').NotebookGroup
-            : get().getGroupAtPath(path)
-        if (!group) return
+        set((state: any) => immer(state, (draft: any) => {
+            const group = (!path || path.length === 0)
+                ? { children: draft.pages[draft.activePageIndex]?.groups || [] }
+                : getGroupInDraft(draft, path)
+            if (!group) return
 
-        const allItems = get().getAllItemsSorted(group)
-        if (allItems.length < 2) return
+            const allItems = get().getAllItemsSorted(group)
+            if (allItems.length < 2) return
 
-        allItems.forEach((item: any, idx: number) => { item.item._order = idx })
+            allItems.forEach((item: any, idx: number) => { item.item._order = idx })
 
-        const currentSortedIndex = allItems.findIndex(
-            (item: any) => item.type === itemType && item.originalIndex === originalIndex
-        )
-        if (currentSortedIndex === -1) return
+            const currentSortedIndex = allItems.findIndex(
+                (item: any) => item.type === itemType && item.originalIndex === originalIndex
+            )
+            if (currentSortedIndex === -1) return
 
-        const newSortedIndex = currentSortedIndex + direction
-        if (newSortedIndex < 0 || newSortedIndex >= allItems.length) return
+            const newSortedIndex = currentSortedIndex + direction
+            if (newSortedIndex < 0 || newSortedIndex >= allItems.length) return
 
-        const currentItem = allItems[currentSortedIndex]
-        const targetItem = allItems[newSortedIndex]
-        const tempOrder = currentItem.item._order
-        currentItem.item._order = targetItem.item._order
-        targetItem.item._order = tempOrder
-
-        set((s: any) => ({ _rev: s._rev + 1 }))
+            const currentItem = allItems[currentSortedIndex]
+            const targetItem = allItems[newSortedIndex]
+            const tempOrder = currentItem.item._order
+            currentItem.item._order = targetItem.item._order
+            targetItem.item._order = tempOrder
+        }))
     },
 
     isFirstInGroup(group: any, itemType: string, originalIndex: number) {

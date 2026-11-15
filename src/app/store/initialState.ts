@@ -188,7 +188,6 @@ export function buildInitialState() {
         _tables: {},
         _duckdbTables: {} as Record<string, { rowCount: number, columns: {name: string, type: string}[] }>,
         _roomFiles: [] as {name: string, tableName: string, size: number, source: 'dropzone' | 'source-cell'}[],
-        _rev: 0,  // compteur de version pour forcer les re-renders
     }
 }
 

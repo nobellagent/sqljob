@@ -18,17 +18,18 @@ import { Icon } from '../../../lib/icons'
 
 // ─── LoopConfigModal ──────────────────────────────────────────────────────────
 export function LoopConfigModal() {
-    const { loopConfigModal, getGroupAtPath, getDefaultLoopQuery, getDefaultZipQuery, forceUpdate, _rev } = useNotebookStore(useShallow(s => ({
-        loopConfigModal: s.loopConfigModal,
-        getGroupAtPath: s.getGroupAtPath,
+    // Le groupe est lu depuis l'état : toute mise à jour immuable change sa
+    // référence et re-rend la modale, sans compteur de version.
+    const loopConfigModal = useNotebookStore(s => s.loopConfigModal)
+    const group = useNotebookStore(s => (s.loopConfigModal.open ? s.getGroupAtPath(s.loopConfigModal.path) : null))
+    const { getDefaultLoopQuery, getDefaultZipQuery, updateGroupAt } = useNotebookStore(useShallow(s => ({
         getDefaultLoopQuery: s.getDefaultLoopQuery,
         getDefaultZipQuery: s.getDefaultZipQuery,
-        forceUpdate: s.forceUpdate,
-        _rev: s._rev
+        updateGroupAt: s.updateGroupAt,
     })))
     const set = useNotebookStore.setState
 
-    const group = loopConfigModal.open ? getGroupAtPath(loopConfigModal.path) : null
+    const path = loopConfigModal.path
 
     return (
         <Dialog open={loopConfigModal.open} onOpenChange={open => !open && set({ loopConfigModal: { open: false, path: null } })}>
@@ -39,13 +40,16 @@ export function LoopConfigModal() {
                         Configuration de la boucle
                     </DialogTitle>
                 </DialogHeader>
-                {group && (
+                {group && path && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between gap-3">
                             <Label>Activer la boucle sur ce groupe</Label>
                             <Switch
                                 checked={!!group.loop?.enabled}
-                                onCheckedChange={v => { group.loop = group.loop || { enabled: false, query: '', zip: false, zipQuery: '' }; group.loop.enabled = v; forceUpdate() }}
+                                onCheckedChange={v => updateGroupAt(path, (g: any) => {
+                                    g.loop = g.loop || { enabled: false, query: '', zip: false, zipQuery: '' }
+                                    g.loop.enabled = v
+                                })}
                             />
                         </div>
 
@@ -59,11 +63,17 @@ export function LoopConfigModal() {
                                     <Textarea
                                         className="font-mono min-h-32 text-sm"
                                         value={group.loop?.query || ''}
-                                        onChange={e => { group.loop.query = e.target.value; forceUpdate() }}
+                                        onChange={e => {
+                                            const v = e.target.value
+                                            updateGroupAt(path, (g: any) => { g.loop.query = v })
+                                        }}
                                         placeholder="SELECT DISTINCT colonne FROM source1 LIMIT 10;"
                                     />
                                 </div>
-                                <Button variant="outline" size="sm" onClick={() => { group.loop.query = getDefaultLoopQuery(); forceUpdate() }}>
+                                <Button variant="outline" size="sm" onClick={() => {
+                                    const query = getDefaultLoopQuery()
+                                    updateGroupAt(path, (g: any) => { g.loop.query = query })
+                                }}>
                                     <Icon name="article" size={16} /> Requête par défaut
                                 </Button>
 
@@ -73,7 +83,7 @@ export function LoopConfigModal() {
                                     <Label>Zipper les fichiers générés</Label>
                                     <Switch
                                         checked={!!group.loop?.zip}
-                                        onCheckedChange={v => { group.loop.zip = v; forceUpdate() }}
+                                        onCheckedChange={v => updateGroupAt(path, (g: any) => { g.loop.zip = v })}
                                     />
                                 </div>
                                 {group.loop?.zip && (
@@ -82,10 +92,16 @@ export function LoopConfigModal() {
                                         <Textarea
                                             className="font-mono min-h-16 text-sm"
                                             value={group.loop?.zipQuery || ''}
-                                            onChange={e => { group.loop.zipQuery = e.target.value; forceUpdate() }}
+                                            onChange={e => {
+                                                const v = e.target.value
+                                                updateGroupAt(path, (g: any) => { g.loop.zipQuery = v })
+                                            }}
                                             placeholder="SELECT 'export.zip' as filename;"
                                         />
-                                        <Button variant="outline" size="sm" onClick={() => { group.loop.zipQuery = getDefaultZipQuery(); forceUpdate() }}>
+                                        <Button variant="outline" size="sm" onClick={() => {
+                                            const query = getDefaultZipQuery()
+                                            updateGroupAt(path, (g: any) => { g.loop.zipQuery = query })
+                                        }}>
                                             <Icon name="article" size={16} /> Requête par défaut
                                         </Button>
                                     </div>
@@ -104,15 +120,12 @@ export function LoopConfigModal() {
 
 // ─── GroupSettingsModal ───────────────────────────────────────────────────────
 export function GroupSettingsModal() {
-    const { groupSettingsModal, getGroupAtPath, forceUpdate, _rev } = useNotebookStore(useShallow(s => ({
-        groupSettingsModal: s.groupSettingsModal,
-        getGroupAtPath: s.getGroupAtPath,
-        forceUpdate: s.forceUpdate,
-        _rev: s._rev
-    })))
+    const groupSettingsModal = useNotebookStore(s => s.groupSettingsModal)
+    const group = useNotebookStore(s => (s.groupSettingsModal.open ? s.getGroupAtPath(s.groupSettingsModal.path) : null))
+    const updateGroupAt = useNotebookStore(s => s.updateGroupAt)
     const set = useNotebookStore.setState
 
-    const group = groupSettingsModal.open ? getGroupAtPath(groupSettingsModal.path) : null
+    const path = groupSettingsModal.path
 
     return (
         <Dialog open={groupSettingsModal.open} onOpenChange={open => !open && set({ groupSettingsModal: { open: false, path: null } })}>
@@ -123,13 +136,13 @@ export function GroupSettingsModal() {
                         Paramètres du groupe
                     </DialogTitle>
                 </DialogHeader>
-                {group && (
+                {group && path && (
                     <div className="space-y-4">
                         <div className="flex items-center justify-between gap-3">
                             <Label>Activer le mode accordion</Label>
                             <Switch
                                 checked={!!group.accordion}
-                                onCheckedChange={v => { group.accordion = v; forceUpdate() }}
+                                onCheckedChange={v => updateGroupAt(path, (g: any) => { g.accordion = v })}
                             />
                         </div>
                         {group.accordion && (
@@ -137,14 +150,17 @@ export function GroupSettingsModal() {
                                 <div className="space-y-1">
                                     <Label className="font-semibold">Titre du groupe</Label>
                                     <Input value={group.title || ''}
-                                        onChange={e => { group.title = e.target.value; forceUpdate() }}
+                                        onChange={e => {
+                                            const v = e.target.value
+                                            updateGroupAt(path, (g: any) => { g.title = v })
+                                        }}
                                         placeholder="Titre affiché dans la bande accordion" />
                                 </div>
                                 <div className="flex items-center justify-between gap-3">
                                     <Label>Ouvert par défaut</Label>
                                     <Switch
                                         checked={group.accordionOpen !== false}
-                                        onCheckedChange={v => { group.accordionOpen = v; forceUpdate() }}
+                                        onCheckedChange={v => updateGroupAt(path, (g: any) => { g.accordionOpen = v })}
                                     />
                                 </div>
                             </>
@@ -154,13 +170,16 @@ export function GroupSettingsModal() {
                             <Label>Afficher les enfants en onglets (tabsChild)</Label>
                             <Switch
                                 checked={!!group.tabsChild}
-                                onCheckedChange={v => { group.tabsChild = v; forceUpdate() }}
+                                onCheckedChange={v => updateGroupAt(path, (g: any) => { g.tabsChild = v })}
                             />
                         </div>
                         <div className="space-y-1">
                             <Label className="font-semibold">Nom du groupe (pour onglet)</Label>
                             <Input value={group.name || ''}
-                                onChange={e => { group.name = e.target.value; forceUpdate() }}
+                                onChange={e => {
+                                    const v = e.target.value
+                                    updateGroupAt(path, (g: any) => { g.name = v })
+                                }}
                                 placeholder="Libellé de l'onglet" />
                         </div>
                         <Separator />
@@ -172,10 +191,10 @@ export function GroupSettingsModal() {
                                     <Label className="text-sm">Type de langage</Label>
                                     <Select
                                         value={ConfigManager.getGroupIfQuery(group)?.engine || 'sql'}
-                                        onValueChange={v => {
-                                            const q = ConfigManager.ensureGroupQueries(group)
-                                            if (q) { q.engine = v; forceUpdate() }
-                                        }}
+                                        onValueChange={v => updateGroupAt(path, (g: any) => {
+                                            const q = ConfigManager.ensureGroupQueries(g)
+                                            if (q) q.engine = v
+                                        })}
                                     >
                                         <SelectTrigger className="h-8 text-sm">
                                             <SelectValue />
@@ -192,8 +211,11 @@ export function GroupSettingsModal() {
                                         className="font-mono min-h-20 text-sm"
                                         value={ConfigManager.getGroupIfQuery(group)?.sql || ''}
                                         onChange={e => {
-                                            const q = ConfigManager.ensureGroupQueries(group)
-                                            if (q) { q.sql = e.target.value; forceUpdate() }
+                                            const v = e.target.value
+                                            updateGroupAt(path, (g: any) => {
+                                                const q = ConfigManager.ensureGroupQueries(g)
+                                                if (q) q.sql = v
+                                            })
                                         }}
                                         placeholder="SELECT true"
                                     />
