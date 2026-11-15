@@ -10,6 +10,7 @@ import type {CommandRegistry, SqlJobCommand} from './commands'
 import {defineCommand} from './commands'
 
 const FormatSchema = z.enum(['json', 'html', 'base64', 'gist'])
+const PathSchema = z.array(z.number().int().min(0))
 
 export const appCommands = [
     defineCommand<void, void>({
@@ -17,10 +18,113 @@ export const appCommands = [
         label: 'Tout exécuter',
         category: 'query',
         permission: 'write',
-        undoable: false,
         execute: async (_input, ctx) => {
             await ctx.project.runAll()
             ctx.ui.notify('Notebook exécuté', 'success')
+        },
+    }),
+
+    defineCommand<{path: number[]}, void>({
+        id: 'notebook.runGroup',
+        label: 'Exécuter un groupe',
+        category: 'query',
+        permission: 'write',
+        params: z.object({path: PathSchema.min(1)}),
+        execute: async ({path}, ctx) => {
+            await ctx.project.runGroup(path)
+        },
+    }),
+
+    defineCommand<{path: number[]; cellIndex: number}, void>({
+        id: 'notebook.runCell',
+        label: 'Exécuter une cellule',
+        category: 'query',
+        permission: 'write',
+        params: z.object({path: PathSchema, cellIndex: z.number().int().min(0)}),
+        execute: async ({path, cellIndex}, ctx) => {
+            await ctx.project.runCell(path, cellIndex)
+        },
+    }),
+
+    defineCommand<void, void>({
+        id: 'page.add',
+        label: 'Ajouter une page',
+        category: 'project',
+        permission: 'write',
+        undoable: true,
+        execute: async (_input, ctx) => {
+            ctx.project.addPage()
+        },
+    }),
+
+    defineCommand<{index: number}, void>({
+        id: 'page.setActive',
+        label: 'Afficher une page',
+        category: 'project',
+        permission: 'read',
+        params: z.object({index: z.number().int().min(0)}),
+        execute: async ({index}, ctx) => {
+            ctx.project.setActivePage(index)
+        },
+    }),
+
+    defineCommand<{cellType: string}, void>({
+        id: 'group.add',
+        label: 'Ajouter un groupe',
+        category: 'project',
+        permission: 'write',
+        undoable: true,
+        params: z.object({cellType: z.string().min(1)}),
+        execute: async ({cellType}, ctx) => {
+            ctx.project.addGroup(cellType)
+        },
+    }),
+
+    defineCommand<{path: number[]}, void>({
+        id: 'group.delete',
+        label: 'Supprimer un groupe',
+        category: 'project',
+        permission: 'write',
+        undoable: true,
+        params: z.object({path: PathSchema.min(1)}),
+        execute: async ({path}, ctx) => {
+            await ctx.project.deleteGroup(path)
+        },
+    }),
+
+    defineCommand<{path: number[]; cellType: string}, void>({
+        id: 'cell.add',
+        label: 'Ajouter une cellule',
+        category: 'project',
+        permission: 'write',
+        undoable: true,
+        params: z.object({path: PathSchema, cellType: z.string().min(1)}),
+        execute: async ({path, cellType}, ctx) => {
+            ctx.project.addCell(path, cellType)
+        },
+    }),
+
+    defineCommand<{path: number[]; cellIndex: number}, void>({
+        id: 'cell.delete',
+        label: 'Supprimer une cellule',
+        category: 'project',
+        permission: 'write',
+        undoable: true,
+        params: z.object({path: PathSchema, cellIndex: z.number().int().min(0)}),
+        execute: async ({path, cellIndex}, ctx) => {
+            await ctx.project.deleteCell(path, cellIndex)
+        },
+    }),
+
+    defineCommand<void, boolean>({
+        id: 'history.undo',
+        label: 'Annuler',
+        category: 'project',
+        permission: 'write',
+        execute: async (_input, ctx) => {
+            const undone = await ctx.history.undo()
+            ctx.ui.notify(undone ? 'Action annulée' : 'Rien à annuler', undone ? 'success' : 'info')
+            return undone
         },
     }),
 
@@ -36,11 +140,20 @@ export const appCommands = [
     }),
 
     defineCommand<void, void>({
+        id: 'project.openGist',
+        label: 'Ouvrir un Gist',
+        category: 'export',
+        permission: 'external',
+        execute: async (_input, ctx) => {
+            ctx.project.openGistUrl()
+        },
+    }),
+
+    defineCommand<void, void>({
         id: 'db.reset',
         label: 'Réinitialiser la base',
         category: 'data',
         permission: 'write',
-        undoable: false,
         execute: async (_input, ctx) => {
             await ctx.project.resetDatabase()
             ctx.ui.notify('Base réinitialisée', 'success')

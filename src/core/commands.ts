@@ -29,8 +29,29 @@ export interface CommandUi {
 /** Capacités projet exposées aux commandes. Volontairement minimales. */
 export interface CommandProjectAccess {
     runAll(): Promise<void>
+    runGroup(path: number[]): Promise<void>
+    runCell(path: number[], cellIndex: number): Promise<void>
+    addPage(): void
+    setActivePage(index: number): void
+    addGroup(cellType: string): void
+    deleteGroup(path: number[]): Promise<void>
+    addCell(path: number[], cellType: string): void
+    deleteCell(path: number[], cellIndex: number): Promise<void>
     exportConfig(format: 'json' | 'html' | 'base64' | 'gist'): Promise<void>
+    openGistUrl(): void
     resetDatabase(): Promise<void>
+    /** Instantané du document avant une commande annulable. */
+    snapshot(): unknown
+    /** Restaure un instantané produit par `snapshot()`. */
+    restore(snapshot: unknown): void
+}
+
+/** Pile d'annulation fournie par l'hôte ; le registre ne connaît pas son contenu. */
+export interface CommandHistory {
+    record(entry: {id: string; snapshot: unknown}): void
+    undo(): Promise<boolean>
+    canUndo(): boolean
+    size(): number
 }
 
 export interface CommandDuckDb {
@@ -42,6 +63,7 @@ export interface CommandContext {
     project: CommandProjectAccess
     duckdb: CommandDuckDb
     ui: CommandUi
+    history: CommandHistory
 }
 
 export interface SqlJobCommand<I = unknown, O = unknown> {
@@ -120,7 +142,13 @@ export class CommandRegistry {
             }
             parsed = result.data as I
         }
-        return command.execute(parsed, ctx)
+        // L'instantané est pris AVANT l'exécution : après, il est trop tard.
+        const snapshot = command.undoable ? ctx.project.snapshot() : undefined
+        const output = await command.execute(parsed, ctx)
+        if (command.undoable) {
+            ctx.history.record({id, snapshot})
+        }
+        return output
     }
 }
 
