@@ -1,5 +1,18 @@
 # Changelog
 
+## 0.3.1 — 2026-11-15
+
+- **Correction de la persistance du document** : les cellules étaient mutées en place et portaient
+  des références DOM, deux causes qui empêchaient toute écriture dans IndexedDB.
+  - détection des changements par sérialisation du contenu (le store signale les mutations profondes
+    via `_rev`, pas par une nouvelle référence de `pages`) ;
+  - `sanitizeForStorage()` retire DOM, callbacks, caches d'exécution et cycles avant stockage ;
+    `File`/`Blob`/`Date`/`ArrayBuffer` sont conservés.
+  - l'annulation (`history.undo`) utilise la même copie stockable : `cell.add` ne lève plus
+    « Converting circular structure to JSON ».
+- Vérifié : ajout d'un groupe + d'une cellule markdown → rechargement → les deux cellules sont
+  rendues, l'IDB contient `sql,markdown`.
+
 ## 0.3.0 — 2026-11-15
 
 ### Commandes
