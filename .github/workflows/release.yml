@@ -41,7 +41,7 @@ jobs:
       # @ihatexcel/sqljob, un scope qui n'appartient pas à ce fork, et il n'est
       # pas publié sur le registre. L'étape reste inerte tant que le secret
       # NPM_TOKEN n'existe pas. La release GitHub (bundle zip) suffit.
-      - name: Publier sur npm (inactif : aucun NPM_TOKEN)
+      - name: Publier sur npm (inactif — aucun NPM_TOKEN)
         if: startsWith(github.ref, 'refs/tags/v') && env.NODE_AUTH_TOKEN != ''
         run: npm publish --provenance --access public
         env:
