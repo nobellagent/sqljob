@@ -186,35 +186,36 @@ return newCell
         const path = Array.isArray(pathOrIndex) ? pathOrIndex : [pathOrIndex]
         const cell = get().getCellAtPath(path, cellIndex)
         if (!cell || !cell.type) return
-        if (cell.type === 'uiParameter' && cell.referenceName && (!cell.name || !String(cell.name).trim())) {
-            cell.name = String(cell.referenceName).trim()
+        let name = cell.name != null ? String(cell.name).trim() : ''
+        if (cell.type === 'uiParameter' && cell.referenceName && !name) {
+            name = String(cell.referenceName).trim()
         }
-        const n = cell.name != null ? String(cell.name).trim() : ''
-        if (!n) cell.name = get().generateUniqueCellName(cell.type, cell._id)
+        if (!name) name = get().generateUniqueCellName(cell.type, cell._id)
+        if (name !== cell.name) get().updateCellById(cell._id, (c: any) => { c.name = name })
     },
 
     ensureAllCellsHaveNames() {
-        const visit = (groups: any[], pathPrefix: number[]) => {
-            for (let gi = 0; gi < (groups || []).length; gi++) {
-                const group = groups[gi]
-                const groupPath = [...pathPrefix, gi]
-                for (let ci = 0; ci < (group.cells || []).length; ci++) {
-                    const cell = group.cells[ci]
+        const renames: Array<{ id: string; name: string }> = []
+        const visit = (groups: any[]) => {
+            for (const group of groups || []) {
+                for (const cell of group.cells || []) {
                     if (!cell || !cell.type) continue
-                    if (cell.type === 'uiParameter' && cell.referenceName && (!cell.name || !String(cell.name).trim())) {
-                        cell.name = String(cell.referenceName).trim()
+                    let name = cell.name != null ? String(cell.name).trim() : ''
+                    if (cell.type === 'uiParameter' && cell.referenceName && !name) {
+                        name = String(cell.referenceName).trim()
                     }
-                    if (!cell.name || !String(cell.name).trim()) {
-                        cell.name = get().generateUniqueCellName(cell.type, cell._id)
-                    }
+                    if (!name) name = get().generateUniqueCellName(cell.type, cell._id)
+                    if (name !== cell.name) renames.push({ id: cell._id, name })
                 }
-                if (group.children) visit(group.children, groupPath)
+                if (group.children) visit(group.children)
             }
         }
-        const pages = get().pages
-        for (let pi = 0; pi < pages.length; pi++) {
-            visit(pages[pi].groups || [], [pi])
-            if (pages[pi].linkGroups) visit(pages[pi].linkGroups, [-1, pi])
+        for (const page of get().pages) {
+            visit(page.groups || [])
+            if (page.linkGroups) visit(page.linkGroups)
+        }
+        for (const { id, name } of renames) {
+            get().updateCellById(id, (c: any) => { c.name = name })
         }
     },
 
@@ -345,25 +346,26 @@ return newCell
     validateCellName(path: any, cellIndex: number) {
         const cell = get().getCellAtPath(path, cellIndex)
         if (!cell) return
-        let currentName = cell.name != null ? String(cell.name).trim() : ''
+        const rename = (name: string) => get().updateCellById(cell._id, (c: any) => { c.name = name })
+        const currentName = cell.name != null ? String(cell.name).trim() : ''
         if (!currentName) {
             get().setStatus('Le nom ne peut pas être vide', 'error')
-            cell.name = get().generateUniqueCellName(cell.type, cell._id)
+            rename(get().generateUniqueCellName(cell.type, cell._id))
             return
         }
         if (currentName.startsWith('_')) {
             get().setStatus('Le nom ne peut pas commencer par _ (réservé aux variables système {{ _xxx }})', 'error')
-            cell.name = get().generateUniqueCellName(cell.type, cell._id)
+            rename(get().generateUniqueCellName(cell.type, cell._id))
             return
         }
         if (!ConfigManager.isCellNameValid(cell, currentName)) {
             get().setStatus('Le nom doit commencer par une lettre et ne contenir que des lettres, chiffres et _', 'error')
-            cell.name = currentName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[^a-zA-Z]/, 'c')
+            rename(currentName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[^a-zA-Z]/, 'c'))
             return
         }
         if (get().isCellNameUsed(currentName, cell._id)) {
             get().setStatus(`Le nom "${currentName}" est déjà utilisé par une autre cellule`, 'error')
-            cell.name = get().generateUniqueCellName(cell.type, cell._id)
+            rename(get().generateUniqueCellName(cell.type, cell._id))
         }
     },
 
@@ -372,24 +374,25 @@ return newCell
         const cell = get().getCellAtPath(path, cellIndex)
         if (!cell || cell.type !== 'source') return
         const currentName = cell.name?.trim()
+        const rename = (name: string) => get().updateCellById(cell._id, (c: any) => { c.name = name })
         if (!currentName) {
             get().setStatus('Le nom de la source ne peut pas être vide', 'error')
-            cell.name = get().generateUniqueSourceName()
+            rename(get().generateUniqueSourceName())
             return
         }
         if (currentName.startsWith('_')) {
             get().setStatus('Le nom ne peut pas commencer par _ (réservé aux variables système)', 'error')
-            cell.name = get().generateUniqueSourceName()
+            rename(get().generateUniqueSourceName())
             return
         }
         if (!/^[a-zA-Z][a-zA-Z0-9_]*$/.test(currentName)) {
             get().setStatus('Le nom doit commencer par une lettre et ne contenir que des lettres, chiffres et _', 'error')
-            cell.name = currentName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[^a-zA-Z]/, 's')
+            rename(currentName.replace(/[^a-zA-Z0-9_]/g, '_').replace(/^[^a-zA-Z]/, 's'))
             return
         }
         if (!get().isNameUniqueAcrossPages(currentName, 'source', get().activePageIndex, path, cellIndex)) {
             get().setStatus(`Le nom de source "${currentName}" est déjà utilisé dans une autre page`, 'error')
-            cell.name = get().generateUniqueSourceName()
+            rename(get().generateUniqueSourceName())
         }
     },
 })

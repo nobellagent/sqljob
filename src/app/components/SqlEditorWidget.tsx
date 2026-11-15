@@ -29,12 +29,17 @@ export function SqlEditorWidget({
     onEnterUiMode = null,
     extraActions = null,
 }: any) {
-    const { devMode, isLoading, runCellAt, db } = useNotebookStore(useShallow(s => ({
+    const { devMode, isLoading, runCellAt, db, updateCellById } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         isLoading: s.isLoading,
         runCellAt: s.runCellAt,
         db: s.db,
+        updateCellById: s.updateCellById,
     })))
+
+    /** Écrit la requête dans la cellule, de façon immuable. */
+    const setQuery = (name: string, value: string) =>
+        updateCellById(cell._id, (c: any) => ConfigManager.setCellQuery(c, name, value))
 
     const [copyDone, setCopyDone] = useState(false)
 
@@ -66,7 +71,7 @@ export function SqlEditorWidget({
             const defaultQ = CELL_TYPE_SCHEMAS?.types?.source?.defaults?.queries?.find((q: any) => q.name === queryName)?.sql
             if (defaultQ) {
                 const initial = defaultQ.replace(/\{name\}/g, cell.name || 'source1')
-                ConfigManager.setCellQuery(cell, queryName, initial)
+                setQuery(queryName, initial)
             }
         }
     }, [cell._id])
@@ -97,22 +102,24 @@ export function SqlEditorWidget({
         // Préserve le mode de matérialisation réel de la cellule (ne jamais forcer 'view')
         const mat = (cell.materialized ?? 'ephemeral') as 'view' | 'table' | 'ephemeral'
         const result = sqlToAstSmart(stripped, mat)
-        if (!cell.queries?.length) cell.queries = [{ name: 'main', sql: fullSql, engine: 'sql', showQueryEditor: false }]
-        const q = cell.queries[0]
-        if (result.compatible && result.ast) {
-            q.ast = result.ast
-            q.degraded = false
-            q.manualSql = null
-        } else {
-            q.ast = null
-            q.degraded = true
-            q.manualSql = stripped
-        }
+        updateCellById(cell._id, (c: any) => {
+            if (!c.queries?.length) c.queries = [{ name: 'main', sql: fullSql, engine: 'sql', showQueryEditor: false }]
+            const q = c.queries[0]
+            if (result.compatible && result.ast) {
+                q.ast = result.ast
+                q.degraded = false
+                q.manualSql = null
+            } else {
+                q.ast = null
+                q.degraded = true
+                q.manualSql = stripped
+            }
+        })
         onEnterUiMode?.()
     }
 
     function handleMonacoChange(value: string | undefined) {
-        ConfigManager.setCellQuery(cell, queryName, value ?? '')
+        setQuery(queryName, value ?? '')
     }
 
     return (
@@ -197,7 +204,7 @@ export function SqlEditorWidget({
                         className="flex w-full rounded-md border border-input bg-background px-3 py-2 font-mono min-h-20 p-3 resize-y text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                         placeholder={placeholder}
                         defaultValue={ConfigManager.getCellQuery(cell, queryName) || ''}
-                        onChange={e => { ConfigManager.setCellQuery(cell, queryName, e.target.value) }}
+                        onChange={e => setQuery(queryName, e.target.value)}
                     />
                 )}
             </div>

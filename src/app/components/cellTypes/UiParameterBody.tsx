@@ -7,9 +7,10 @@ import {ResultInfo} from './shared'
 import type {CellBodyBaseProps} from './types'
 
 export const UiParameterBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }) => {
-    const { devMode, onParameterValueChange } = useNotebookStore(useShallow(s => ({
+    const { devMode, onParameterValueChange, updateCellById } = useNotebookStore(useShallow(s => ({
         devMode: s.devMode,
         onParameterValueChange: s.onParameterValueChange,
+        updateCellById: s.updateCellById,
     })))
     const languageType = ConfigManager.getCellEngine(cell, 'main')
     const isJs = languageType === 'js'
@@ -30,8 +31,10 @@ export const UiParameterBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellI
     if (!devMode && cell.userVisible === false) return null
 
     function handleChange(newValue: any) {
-        cell._value = newValue
-        cell._userModified = true
+        updateCellById(cell._id, (c: any) => {
+            c._value = newValue
+            c._userModified = true
+        })
         setLocalValue(newValue)
         onParameterValueChange?.(cell)
     }

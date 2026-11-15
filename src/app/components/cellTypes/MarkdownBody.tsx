@@ -7,6 +7,9 @@ import type {CellBodyBaseProps} from './types'
 
 export const MarkdownBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellIndex }) => {
     const devMode = useNotebookStore(s => s.devMode)
+    const updateCellById = useNotebookStore(s => s.updateCellById)
+    // Instance EasyMDE locale : un objet d'éditeur n'a rien à faire dans le document.
+    const editorInstanceRef = useRef<any>(null)
     const easyMDERef = useRef<HTMLTextAreaElement>(null)
     const hasCellHeight = useNotebookStore(s => s.hasCellHeight)
 
@@ -19,9 +22,9 @@ export const MarkdownBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellInde
 
         CDNManager.loadEasyMDE().then(() => {
             if (!el.parentElement) return
-            if (cell._easyMDEcli) {
-                try { (cell._easyMDEcli as any).toTextArea() } catch (_) {}
-                cell._easyMDEcli = null
+            if (editorInstanceRef.current) {
+                try { editorInstanceRef.current.toTextArea() } catch (_) {}
+                editorInstanceRef.current = null
             }
             inst = new (window as any).EasyMDE({
                 element: el,
@@ -36,10 +39,11 @@ export const MarkdownBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellInde
             if (cm && isReadOnly) cm.setOption('readOnly', true)
             if (cm && !isReadOnly) {
                 cm.on('change', () => {
-                    ConfigManager.setCellEditableContent(cell, inst.value())
+                    const value = inst.value()
+                    updateCellById(cell._id, (c: any) => ConfigManager.setCellEditableContent(c, value))
                 })
             }
-            cell._easyMDEcli = inst
+            editorInstanceRef.current = inst
             // En clientMode explicitement (devMode === false) : basculer en preview par défaut
             // En devMode (true) ou état indéterminé (null) : rester en mode édition
             if (devMode === false && typeof inst.togglePreview === 'function') {
@@ -52,7 +56,7 @@ export const MarkdownBody: React.FC<CellBodyBaseProps> = ({ cell, path, cellInde
         })
         return () => {
             if (inst) { try { inst.toTextArea() } catch (_) {} }
-            if (cell._easyMDEcli === inst) cell._easyMDEcli = null
+            if (editorInstanceRef.current === inst) editorInstanceRef.current = null
         }
     }, [cell._id, devMode])
 
