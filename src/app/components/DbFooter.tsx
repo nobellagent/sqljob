@@ -29,19 +29,26 @@ export function DbStatusBadge() {
         const read = async () => {
             try {
                 const conn = DuckDBManager.getConnection()
-                if (!conn) return
+                if (!conn) return false
                 const result = await conn.query('SELECT database_size FROM pragma_database_size()')
                 const row = result.toArray?.()[0]
                 const value = row ? Number(Object.fromEntries(row).database_size) : NaN
                 if (!cancelled) setSize(Number.isFinite(value) ? value : null)
+                return true
             } catch {
                 if (!cancelled) setSize(null)
+                return true
             }
         }
-        void read()
+        // DuckDB peut mettre plusieurs secondes à s'initialiser : on réessaie
+        // jusqu'à obtenir une connexion, puis on rafraîchit périodiquement.
+        const bootstrap = setInterval(async () => {
+            if (await read()) clearInterval(bootstrap)
+        }, 1_000)
         const timer = setInterval(read, 15_000)
         return () => {
             cancelled = true
+            clearInterval(bootstrap)
             clearInterval(timer)
         }
     }, [])
