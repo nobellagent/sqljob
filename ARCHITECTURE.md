@@ -49,9 +49,16 @@ defineCommand({
 })
 ```
 
-Le `CommandContext` n'expose que trois capacités : `project`, `duckdb`, `ui`. Il ne donne **jamais**
-accès au store Zustand ni à l'objet DuckDB brut — c'est ce qui permettra d'ouvrir le registre aux
-plugins sans casser l'application à chaque évolution interne.
+Le `CommandContext` n'expose que quatre capacités : `project`, `duckdb`, `ui` et `history`. Il ne donne
+**jamais** accès au store Zustand ni à l'objet DuckDB brut — c'est ce qui permettra d'ouvrir le
+registre aux plugins sans casser l'application à chaque évolution interne.
+
+Une commande `undoable` déclenche la prise d'un instantané du document **avant** exécution ; la pile
+(25 entrées) vit dans l'hôte, le registre ne manipule que des instantanés opaques. `history.undo`
+est elle-même une commande, donc accessible depuis l'URL ou l'API.
+
+Automatisation : `window.sqljob.commands.execute(id, input)` et
+`#cmd=<id>&input=<json>` (le hash est consommé après exécution).
 
 ## Offline
 
@@ -59,8 +66,31 @@ plugins sans casser l'application à chaque évolution interne.
 |---|---|---|
 | Config UI | `persistSliceConfigs` → localStorage | layout, thème |
 | Données | OPFS (`opfs://sqljob.db`) | tables DuckDB |
-| Projet | IndexedDB (à venir) | pages, groupes, cellules |
+| Projet | IndexedDB (`sqljob/project/current`) | pages, groupes, cellules |
 | Ressources | Service worker (`public/sw.js`) | JS, CSS, wasm, workers |
+
+Le document est écrit dans IndexedDB 500 ms après la dernière modification et une dernière fois sur
+`pagehide`. Au démarrage, il n'est restauré que si aucune configuration externe n'est fournie
+(`#defaultConfigBase64`, `?gist=`, `?config=`…) — sinon la configuration chargée gagne.
+
+## Pourquoi DuckDB reste chargé depuis le CDN
+
+`@duckdb/duckdb-wasm` pèse **33 Mo** (`duckdb-eh.wasm`). Le bundler dans `dist-cdn` ferait un paquet
+que jsDelivr refuse (limite de 20 Mo par fichier) et ferait exploser le temps de build. La version est
+donc figée par constante (`DUCKDB_WASM_VERSION`) et le service worker met le wasm et le worker en
+cache : après une première visite en ligne, l'application démarre et exécute du SQL hors réseau.
+Le moteur alternatif `ducklings` reste chargé à la demande, uniquement s'il est sélectionné.
+
+## Pièges connus (vérifiés en exécution)
+
+- **`resolvePanelIdentity` ignore `id`** : un nœud `{type:'panel', id:'main'}` ne rend rien ; il faut
+  `panel: 'main'`. Test de régression dans `tests/layout.test.ts`.
+- **`ConfigManager.loadConfigFromGist()` ne renvoie jamais `null`** : il retombe sur la config par
+  défaut. Toute logique « pas de config → restaurer le local » doit tester la présence réelle d'une
+  source (`#defaultConfigBase64`, paramètres d'URL), pas la valeur de retour.
+- **`build:cdn` demande ~6 Go de RAM** : il se lance en CI, jamais sur un poste à 3 Go.
+- **Les paquets `@sqlrooms/*` ont des imports internes sans extension** : Vitest doit les inliner
+  (`server.deps.inline`) sinon la résolution Node échoue.
 
 Le service worker met en cache au fil de l'eau le bundle et les dépendances jsDelivr
 (`@duckdb/duckdb-wasm`, monaco) : après une première visite en ligne, l'application démarre hors

@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.3.0 — 2026-11-15
+
+### Commandes
+
+- **14 commandes** : `notebook.runAll`, `notebook.runGroup`, `notebook.runCell`, `page.add`,
+  `page.setActive`, `group.add`, `group.delete`, `cell.add`, `cell.delete`, `history.undo`,
+  `export.config`, `project.openGist`, `db.reset`, `db.query`.
+- **Annulation** : instantané pris avant chaque commande `undoable`, pile de 25 entrées,
+  `window.sqljob.commands.undo()`.
+- **Automatisation par URL** : `#cmd=db.query&input={"sql":"SELECT 1"}` ; le hash est consommé
+  après exécution.
+
+### Persistance
+
+- **Document dans IndexedDB** (`sqljob/project/current`), sauvegarde débattue à 500 ms et vidée
+  sur `pagehide`.
+- Restauration au démarrage **uniquement** en l'absence de configuration externe
+  (`#defaultConfigBase64`, `?gist=`, `?config=`…), sinon la configuration chargée garde la priorité.
+- Indicateur de base dans la barre d'outils (taille, mode OPFS/RAM) et pied de panneau Sources
+  avec réinitialisation.
+
+### Outillage
+
+- `fake-indexeddb` pour tester la persistance en Node.
+- `.gitignore` complété ; 21 branches `claude/*` fusionnées supprimées du remote.
+- `CONTRIBUTING.md`, `SECURITY.md`, `docs/export-formats.md`.
+
 ## 0.2.1 — 2026-11-14
 
 - La release attache désormais `dist-cdn.zip` (bundle complet) au lieu des deux fichiers d'entrée :
