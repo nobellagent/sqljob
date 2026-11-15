@@ -53,6 +53,11 @@ jobs:
           cp -r dist-cdn _site/
           # PWA : service worker + manifeste à la racine du site (scope /)
           cp -r public/. _site/
+          # Le bundle d'entrée garde un nom fixe (sqljob.js) et GitHub Pages le
+          # met en cache 10 min : sans version unique, un déploiement peut rester
+          # invisible. On estampille le SHA du commit dans la query string
+          # (le chunk haché derrière reste, lui, cacheable indéfiniment).
+          sed -i "s/v=20260306b/v=${GITHUB_SHA::8}/g" _site/index.html
 
       # main → racine du site (/)
       - name: Deploy main to /
