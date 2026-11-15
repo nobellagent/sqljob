@@ -21,7 +21,10 @@ export const createFilesSlice = (
     handleSingleSourceDrop(e: any, path: any, cellIndex: number) {
         const cell = get().getCellAtPath(path, cellIndex)
         if (!cell || cell.type !== 'source') return
-        cell._isDragging = false
+        set((state: any) => immer(state, (draft: any) => {
+            const target = getCellByIdInDraft(draft, cell._id)
+            if (target) target._isDragging = false
+        }))
         const files = e.dataTransfer.files
         if (files.length > 0) get().loadSingleSourceFile(files[0], path, cellIndex)
     },
@@ -266,7 +269,10 @@ export const createFilesSlice = (
     handleDocxTemplateDrop(e: any, path: any, cellIndex: number) {
         const cell = get().getCellAtPath(path, cellIndex)
         if (!cell || cell.type !== 'publipostageWord') return
-        cell._isDragging = false
+        set((state: any) => immer(state, (draft: any) => {
+            const target = getCellByIdInDraft(draft, cell._id)
+            if (target) target._isDragging = false
+        }))
         const files = e.dataTransfer.files
         if (files.length > 0) get().loadDocxTemplate(files[0], path, cellIndex)
     },
@@ -320,11 +326,15 @@ export const createFilesSlice = (
         const fileInput = document.getElementById('docxInput_' + cell._id) as HTMLInputElement
         if (fileInput) fileInput.value = ''
 
-        cell.docxTemplateBase64 = null
-        cell.docxTemplateFileName = ''
-        if (Array.isArray(cell.files)) cell.files = cell.files.filter((f: any) => f.slot !== 'docxTemplate')
-        delete cell.fileBase64
-        delete cell.fileName
+        set((state: any) => immer(state, (draft: any) => {
+            const target = getCellByIdInDraft(draft, cell._id)
+            if (!target) return
+            target.docxTemplateBase64 = null
+            target.docxTemplateFileName = ''
+            if (Array.isArray(target.files)) target.files = target.files.filter((f: any) => f.slot !== 'docxTemplate')
+            delete target.fileBase64
+            delete target.fileName
+        }))
 
         get().setStatus('Template Word supprimé', 'success')
     },

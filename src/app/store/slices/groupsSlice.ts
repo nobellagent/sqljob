@@ -3,7 +3,7 @@ import { ConfigManager } from '../../../lib/ConfigManager'
 import { useConfirmModal } from '../uiStores'
 import type { NotebookStoreState } from '../types'
 import { produce } from 'immer'
-import { getGroupInDraft } from '../mutations'
+import { getCellInDraft, getGroupInDraft } from '../mutations'
 
 /** `produce` typé large : le slice reçoit l'état complet, immer rend le suivant. */
 const immer = (state: any, fn: (draft: any) => void) => produce(state, fn) as any
@@ -140,10 +140,9 @@ export const createGroupsSlice = (
     },
 
     toggleGroupDirection(path: any) {
-        const group = get().getGroupAtPath(path)
-        if (group) {
-            group.direction = group.direction === 'column' ? 'row' : 'column'
-        }
+        get().updateGroupAt(path, (g: any) => {
+            g.direction = g.direction === 'column' ? 'row' : 'column'
+        })
     },
 
     openLoopConfigModal(path: any) {
@@ -252,8 +251,14 @@ FROM source1 LIMIT 10;`
             const firstCell = get().createNewCell('markdown')
             firstCell._order = 0
             childGroup.cells = [firstCell]
-            get().getLinkGroups().push(childGroup)
-            cell.childGroupId = childGroup._id
+            set((state: any) => immer(state, (draft: any) => {
+                const page = draft.pages[draft.activePageIndex]
+                if (!page) return
+                if (!page.linkGroups) page.linkGroups = []
+                page.linkGroups.push(childGroup)
+                const target = getCellInDraft(draft, path, cellIndex)
+                if (target) target.childGroupId = childGroup._id
+            }))
         }
 
         set({ childGroupModal: { open: true, path, cellIndex, group: childGroup } })
@@ -286,36 +291,38 @@ FROM source1 LIMIT 10;`
         if (path.length === 1) {
             const index = path[0]
             const newIndex = index + direction
-            const groups = get().getGroups()
-            if (newIndex >= 0 && newIndex < groups.length) {
+            set((state: any) => immer(state, (draft: any) => {
+                const groups = draft.pages[draft.activePageIndex]?.groups
+                if (!groups || newIndex < 0 || newIndex >= groups.length) return
                 const temp = groups[index]
                 groups[index] = groups[newIndex]
                 groups[newIndex] = temp
-            }
+            }))
         } else {
             const parentPath = path.slice(0, -1)
             const childIndex = path[path.length - 1]
-            const parent = get().getGroupAtPath(parentPath)
-            if (parent && parent.children) {
+            set((state: any) => immer(state, (draft: any) => {
+                const parent = getGroupInDraft(draft, parentPath)
+                if (!parent?.children) return
                 const newIndex = childIndex + direction
-                if (newIndex >= 0 && newIndex < parent.children.length) {
-                    const temp = parent.children[childIndex]
-                    parent.children[childIndex] = parent.children[newIndex]
-                    parent.children[newIndex] = temp
-                }
-            }
+                if (newIndex < 0 || newIndex >= parent.children.length) return
+                const temp = parent.children[childIndex]
+                parent.children[childIndex] = parent.children[newIndex]
+                parent.children[newIndex] = temp
+            }))
         }
     },
 
     moveCellInGroupAtPath(path: any, cellIndex: number, direction: number) {
-        const group = get().getGroupAtPath(path)
-        if (!group || !group.cells) return
-        const newIndex = cellIndex + direction
-        if (newIndex >= 0 && newIndex < group.cells.length) {
+        set((state: any) => immer(state, (draft: any) => {
+            const group = getGroupInDraft(draft, path)
+            if (!group?.cells) return
+            const newIndex = cellIndex + direction
+            if (newIndex < 0 || newIndex >= group.cells.length) return
             const temp = group.cells[cellIndex]
             group.cells[cellIndex] = group.cells[newIndex]
             group.cells[newIndex] = temp
-        }
+        }))
     },
 
     getGroupElementId(path: any) {
