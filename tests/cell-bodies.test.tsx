@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any -- store et cellules simulés volontairement, les types réels tireraient DuckDB et Univer */
 // @vitest-environment jsdom
 /**
  * Un test par type de cellule : chaque corps du registre doit se rendre
