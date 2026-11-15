@@ -20,6 +20,19 @@ import { useProjectPersistence } from './hooks/useProjectPersistence'
 
 type AppState = 'loading' | 'passphrase' | 'ready'
 
+/**
+ * Vrai si une configuration est fournie de l'extérieur (HTML exporté, URL, Gist).
+ * Dans ce cas le document local ne doit pas prendre le dessus.
+ */
+function hasProvidedConfig(): boolean {
+    const embedded = document.getElementById('defaultConfigBase64')?.textContent?.trim()
+    if (embedded) return true
+    const query = new URLSearchParams(window.location.search)
+    const hash = new URLSearchParams(window.location.hash.replace(/^#/, ''))
+    const keys = ['gist', 'config', 'data', 'c', 'json', 'url']
+    return keys.some(key => query.has(key) || hash.has(key))
+}
+
 function AppContent() {
     const [appState, setAppState] = useState<AppState>('loading')
     const initFromConfig = useNotebookStore(s => s.initFromConfig)
@@ -46,8 +59,11 @@ function AppContent() {
             } else {
                 if (loadResult) {
                     initFromConfig(loadResult)
-                } else {
-                    // Pas de config dans l'URL : on reprend le document local.
+                }
+                // `loadConfigFromGist()` renvoie toujours une config (celle par défaut en dernier
+                // recours) : il faut donc détecter explicitement l'absence de config externe
+                // avant de restaurer le document local, sinon celui-ci est écrasé.
+                if (!hasProvidedConfig()) {
                     const pages = await loadProject()
                     if (pages) {
                         useNotebookStore.getState().setPages(pages)
