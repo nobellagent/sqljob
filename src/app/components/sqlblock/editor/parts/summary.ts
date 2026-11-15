@@ -1,7 +1,7 @@
 import type {SqlBlockStep} from '../../../../../lib/SqlBlockTypes'
 import {CustomSqlStepUI} from '../steps/customSql'
 
-export function truncateCols(items: string[], max = 4): string {
+function truncateCols(items: string[], max = 4): string {
     if (items.length <= max) return items.join(', ')
     return items.slice(0, max).join(', ') + '…'
 }

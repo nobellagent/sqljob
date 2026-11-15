@@ -1,7 +1,7 @@
 import type {PivotStep} from '../../../../../lib/SqlBlockTypes'
 import {ColSelect} from '../ui'
 
-export const AGG_FNS_PIVOT = ['SUM', 'COUNT', 'AVG', 'MIN', 'MAX', 'MEDIAN']
+const AGG_FNS_PIVOT = ['SUM', 'COUNT', 'AVG', 'MIN', 'MAX', 'MEDIAN']
 
 
 export function PivotStepUI({ step, availableCols, onChange }: { step: PivotStep; availableCols: string[]; onChange: (s: PivotStep) => void }) {

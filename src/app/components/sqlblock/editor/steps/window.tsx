@@ -2,13 +2,13 @@ import type {WindowStep, WindowColumn} from '../../../../../lib/SqlBlockTypes'
 import {AddRowBtn, ColSelect, MoveBtns, RemoveBtn, TxtInput} from '../ui'
 import {moveArr} from '../filters'
 
-export const WINDOW_FNS = [
+const WINDOW_FNS = [
     'ROW_NUMBER', 'RANK', 'DENSE_RANK', 'PERCENT_RANK', 'CUME_DIST', 'NTILE',
     'SUM', 'AVG', 'COUNT', 'MIN', 'MAX', 'MEDIAN',
     'LAG', 'LEAD', 'FIRST_VALUE', 'LAST_VALUE', 'NTH_VALUE',
 ]
 
-export const NO_COL_FNS = new Set(['ROW_NUMBER', 'RANK', 'DENSE_RANK', 'PERCENT_RANK', 'CUME_DIST'])
+const NO_COL_FNS = new Set(['ROW_NUMBER', 'RANK', 'DENSE_RANK', 'PERCENT_RANK', 'CUME_DIST'])
 
 
 export function WindowStepUI({ step, availableCols, onChange }: { step: WindowStep; availableCols: string[]; onChange: (s: WindowStep) => void }) {

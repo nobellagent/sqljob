@@ -25,7 +25,7 @@ import {CustomSqlStepUI} from '../steps/customSql'
 import {ConditionalColumnStepUI} from '../steps/conditional'
 import {SqlPreview} from './Preview'
 
-export function defaultStep(type: SqlBlockStep['type']): SqlBlockStep {
+function defaultStep(type: SqlBlockStep['type']): SqlBlockStep {
     switch (type) {
         case 'select_columns':  return { type, columns: [] }
         case 'exclude_columns': return { type, columns: [] }

@@ -18,7 +18,7 @@ function css(vars: Record<string, string>): string {
     return Object.entries(vars).map(([k, v]) => `  --${k}: ${v};`).join('\n')
 }
 
-export function applyCustomTheme(light: string, dark: string) {
+function applyCustomTheme(light: string, dark: string) {
     let el = document.getElementById(STYLE_ID) as HTMLStyleElement | null
     if (!el) {
         el = document.createElement('style')

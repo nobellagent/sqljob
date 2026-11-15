@@ -11,10 +11,9 @@ import {buildKpiHtml} from './echart/kpi'
 import {buildTableColumnRenderers, getTableColumnDisplayNames} from './echart/table'
 import {_detectChartType, parseColumnRoles} from './echart/roles'
 
-export type {ColumnRole, ParsedColumnRoles} from './echart/roles'
 export {parseColumnRoles} from './echart/roles'
-export {buildTableColumnRenderers, getTableColumnDisplayNames} from './echart/table'
-export const buildEChartsOption = _buildEChartsOption
+export {getTableColumnDisplayNames} from './echart/table'
+const buildEChartsOption = _buildEChartsOption
 
 export class EChartSqlParser {
     static parseColumnRoles = parseColumnRoles;

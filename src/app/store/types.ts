@@ -20,7 +20,7 @@ export type DuckdbTableInfo = {
 }
 
 /** Requête associée à une cellule (SQL, moteur, affichage) */
-export type CellQuery = {
+type CellQuery = {
     name: string
     sql: string
     engine: string
@@ -32,7 +32,7 @@ export type CellQuery = {
 }
 
 /** Option d'un paramètre dropdown */
-export type DropdownOption = {
+type DropdownOption = {
     value: string
     label: string
 }
@@ -120,7 +120,7 @@ export type NotebookCell = {
 }
 
 /** Configuration de boucle d'un groupe */
-export type GroupLoop = {
+type GroupLoop = {
     enabled: boolean
     query: string
     zip: boolean
@@ -191,7 +191,6 @@ export type ExportModal = {
  */
 import type {CustomNotebookState} from './types/notebookState'
 
-export type {CustomNotebookState} from './types/notebookState'
 
 // ─── Type public du store ──────────────────────────────────────────────────────
 

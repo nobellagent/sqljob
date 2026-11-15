@@ -33,12 +33,9 @@ import {ConditionalColumnStepUI} from './steps/conditional'
 
 
 // Ré-exports : les consommateurs importent depuis ce module.
-export { AddStepModal, defaultStep } from './parts/AddStepModal'
-export { ChartPreviewInEditor, DegradedBanner, IncompatibleConfirmModal, SqlPreview } from './parts/Preview'
-export { SourceConfigModal, SourceStepItem } from './parts/SourceSteps'
-export { StepConfigModal } from './parts/StepConfigModal'
-export { StepItem } from './parts/StepItem'
-export { VizConfigModal, VizStepItem } from './parts/VizSteps'
-export { truncateCols, stepSummary } from './parts/summary'
-export { useStepInputSchemas } from './parts/useStepInputSchemas'
-export type { DynamicSchema } from './parts/useStepInputSchemas'
+export {AddStepModal} from './parts/AddStepModal'
+export {ChartPreviewInEditor, DegradedBanner, IncompatibleConfirmModal, SqlPreview} from './parts/Preview'
+export {SourceStepItem} from './parts/SourceSteps'
+export {StepItem} from './parts/StepItem'
+export {VizStepItem} from './parts/VizSteps'
+export {useStepInputSchemas} from './parts/useStepInputSchemas'

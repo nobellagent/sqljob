@@ -2,10 +2,10 @@ import type {GroupByStep, Aggregation} from '../../../../../lib/SqlBlockTypes'
 import {AddRowBtn, ColSelect, MoveBtns, RemoveBtn, TxtInput} from '../ui'
 import {moveArr} from '../filters'
 
-export const AGG_FNS = ['count', 'count_distinct', 'sum', 'avg', 'min', 'max', 'median', 'stddev', 'string_agg', 'list']
+const AGG_FNS = ['count', 'count_distinct', 'sum', 'avg', 'min', 'max', 'median', 'stddev', 'string_agg', 'list']
 
 
-export function autoAlias(fn: string, column: string): string {
+function autoAlias(fn: string, column: string): string {
     const col = column === '*' ? 'all' : column
     return `${fn}_${col}`
 }

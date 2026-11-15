@@ -51,8 +51,8 @@ import {buildInitialState, setLoadedConfigSource} from './initialState'
 
 
 // ─── Panel IDs (Zod enum — typage statique + sécurité à l'exécution) ─────────
-export const PanelTypes = z.enum(['main', 'data'] as const)
-export type PanelTypes = z.infer<typeof PanelTypes>
+const PanelTypes = z.enum(['main', 'data'] as const)
+type PanelTypes = z.infer<typeof PanelTypes>
 
 // ─── Connecteur DuckDB ponté vers DuckDBManager ───────────────────────────────
 // Permet à SqlEditorModal (et state.db) d'utiliser la même instance DuckDB

@@ -1,6 +1,6 @@
 // Module extrait de EChartSqlParser.ts — rôles de colonnes.
 
-export const KNOWN_ROLES = [
+const KNOWN_ROLES = [
     // Ordering matters: longer/more-specific roles MUST come before shorter ones
     // so suffix matching doesn't accidentally match a prefix
     'BARCHART_STACKED_PERCENT',
@@ -35,7 +35,7 @@ export const KNOWN_ROLES = [
     'YLINE',
 ];
 
-export const KNOWN_ROLES_SET = new Set(KNOWN_ROLES);
+const KNOWN_ROLES_SET = new Set(KNOWN_ROLES);
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 

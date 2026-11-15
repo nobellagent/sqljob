@@ -4,7 +4,7 @@ import {stepSql} from '../../../../../lib/SqlBlockService'
 import type {SqlBlockAst} from '../../../../../lib/SqlBlockTypes'
 import {makeTableRef} from '../session'
 
-export interface DynamicSchema { columns: string[]; colTypes: Record<string, string> }
+interface DynamicSchema { columns: string[]; colTypes: Record<string, string> }
 
 
 

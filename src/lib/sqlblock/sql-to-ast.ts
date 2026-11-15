@@ -20,7 +20,7 @@ export function sqlToAst(sql: string, materialize: SqlBlockMaterialize = 'view')
     return { ast: null, compatible: false, error: 'SQL non compatible avec les blocs disponibles' };
 }
 
-export function tryParseSimpleSelect(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
+function tryParseSimpleSelect(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
     const m = sql.match(/^SELECT\s+(.+?)\s+FROM\s+((?:"[^"]*"|\S)+)\s*;?\s*$/is);
     if (!m) return null;
     const parsed = parseSelectBody(m[1].trim());
@@ -44,7 +44,7 @@ export function extractFinalSelectFromWithQuery(sql: string): string | null {
     return null;
 }
 
-export function tryParseCteChain(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
+function tryParseCteChain(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
     if (!/^WITH\s+_sqlblock_s/i.test(sql)) return null;
     const ctes = extractCtes(sql);
     if (!ctes?.length) return null;
@@ -62,7 +62,7 @@ export function tryParseCteChain(sql: string, materialize: SqlBlockMaterialize):
 
 interface CteInfo { body: string; source: string }
 
-export function extractCtes(sql: string): CteInfo[] | null {
+function extractCtes(sql: string): CteInfo[] | null {
     const ctes: CteInfo[] = [];
     const re = /_sqlblock_s\d+(?:_[a-z]+)?\s+AS\s*\(/gi;
     let match: RegExpExecArray | null;
@@ -113,7 +113,7 @@ export function parseSelectBody(body: string): { step: SqlBlockStep | null } | n
     return null;
 }
 
-export function splitIdentifiers(s: string): string[] | null {
+function splitIdentifiers(s: string): string[] | null {
     const ids: string[] = [];
     for (const p of s.split(',').map(x => x.trim()).filter(Boolean)) {
         const id = parseIdentifier(p);
@@ -123,14 +123,14 @@ export function splitIdentifiers(s: string): string[] | null {
     return ids;
 }
 
-export function parseIdentifier(s: string): string | null {
+function parseIdentifier(s: string): string | null {
     s = s.trim();
     if (s.startsWith('"') && s.endsWith('"')) return s.slice(1, -1).replace(/""/g, '"');
     if (/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(s)) return s;
     return null;
 }
 
-export function parseCastList(s: string): ChangeTypeChange[] | null {
+function parseCastList(s: string): ChangeTypeChange[] | null {
     const re = /CAST\(([^\s),]+)\s+AS\s+([A-Z_][A-Z0-9_]*(?:\(\d+(?:,\s*\d+)?\))?)\)\s+AS\s+([^\s,)]+)/gi;
     const changes: ChangeTypeChange[] = [];
     let m: RegExpExecArray | null;

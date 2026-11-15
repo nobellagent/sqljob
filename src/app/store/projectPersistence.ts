@@ -17,7 +17,7 @@ const DB_VERSION = 1
 const STORE = 'project'
 const KEY = 'current'
 
-export interface StoredProject {
+interface StoredProject {
     version: 1
     updatedAt: string
     pages: NotebookPage[]

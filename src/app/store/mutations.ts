@@ -150,7 +150,7 @@ export function updateCellByIdInState(
 }
 
 /** Groupe portant cet `_id`, où qu'il soit dans le document. */
-export function getGroupByIdInState(state: AnyState, groupId: string): any | null {
+function getGroupByIdInState(state: AnyState, groupId: string): any | null {
     const visit = (group: any): any => {
         if (!group) return null
         if (group._id === groupId) return group

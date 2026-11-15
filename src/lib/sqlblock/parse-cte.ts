@@ -66,12 +66,12 @@ export function extractCtesWithFullBody(sql: string): CteFullInfo[] | null {
     return ctes.length > 0 ? ctes : null;
 }
 
-export function escapeRegex(s: string): string {
+function escapeRegex(s: string): string {
     return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 }
 
 /** Parse une valeur SQL littérale (chaîne quotée ou numérique/booléen). */
-export function tryParseGroupByParts(selectBody: string, groupByBody: string): import('../SqlBlockTypes').GroupByStep | null {
+function tryParseGroupByParts(selectBody: string, groupByBody: string): import('../SqlBlockTypes').GroupByStep | null {
     const groupCols = splitSelectParts(groupByBody).map(s => unquoteId(s.trim())).filter(Boolean);
     if (!groupCols.length) return null;
 

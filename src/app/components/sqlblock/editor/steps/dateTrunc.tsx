@@ -1,7 +1,7 @@
 import type {DateTruncStep} from '../../../../../lib/SqlBlockTypes'
 import {ColSelect, TxtInput} from '../ui'
 
-export const DATE_GRANULARITIES = ['second', 'minute', 'hour', 'day', 'week', 'month', 'quarter', 'year']
+const DATE_GRANULARITIES = ['second', 'minute', 'hour', 'day', 'week', 'month', 'quarter', 'year']
 
 
 export function DateTruncStepUI({ step, availableCols, onChange }: { step: DateTruncStep; availableCols: string[]; onChange: (s: DateTruncStep) => void }) {

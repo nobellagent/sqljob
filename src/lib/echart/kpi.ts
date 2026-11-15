@@ -9,7 +9,7 @@ export function buildKpiHtml(results: any[], parsed: ParsedColumnRoles, label?: 
 }
 
 /** KPI: centered card — KPI / LABEL (compat) / PERCENT / COMPARE / TREND */
-export function _buildKpiHtml(row: any, roleMap: Record<string, ColumnRole[]>, title: string | null, icon: string | null = null): string {
+function _buildKpiHtml(row: any, roleMap: Record<string, ColumnRole[]>, title: string | null, icon: string | null = null): string {
     const parts: string[] = [];
 
     function _sub(display: string, role: string, fallback = ''): string {

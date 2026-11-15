@@ -41,7 +41,7 @@ export function renderFilterValue(v: string, kind?: FilterValueKind): string {
     return quoteSqlValue(v)
 }
 
-export function conditionToSql(c: FilterCondition): string {
+function conditionToSql(c: FilterCondition): string {
     const col = quoteId(c.column);
     const val  = renderFilterValue(c.value ?? '', c.valueKind)
     const valTo = renderFilterValue(c.valueTo ?? '', c.valueToKind)
@@ -69,7 +69,7 @@ export function quoteSqlValue(v: string): string {
     return `'${v.replace(/'/g, "''")}'`;
 }
 
-export function parseCondition(s: string): FilterCondition | null {
+function parseCondition(s: string): FilterCondition | null {
     s = s.trim();
     let m: RegExpMatchArray | null;
 
@@ -121,7 +121,7 @@ export function parseCondition(s: string): FilterCondition | null {
  * (pas dans des parenthèses ni des chaînes littérales), en ignorant l'AND
  * qui fait partie d'un BETWEEN.
  */
-export function splitTopLevelBy(s: string, sepRe: RegExp): string[] {
+function splitTopLevelBy(s: string, sepRe: RegExp): string[] {
     const parts: string[] = [];
     let depth = 0;
     let inStr = false;
@@ -162,7 +162,7 @@ export function splitTopLevelBy(s: string, sepRe: RegExp): string[] {
 }
 
 /** Parse un groupe de filtre récursif (avec AND/OR/NOT/parens). */
-export function parseSingleFilterGroup(s: string): FilterGroup | null {
+function parseSingleFilterGroup(s: string): FilterGroup | null {
     let negate = false;
     let inner = s.trim();
 

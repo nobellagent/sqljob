@@ -1,12 +1,12 @@
 // Locales Univer chargées à la demande (un chunk par langue).
 
-export type LocaleEntry = {
+type LocaleEntry = {
     type: string
     loader: () => Promise<{ default: any }>
     tableLoader: () => Promise<{ default: any }>
     sortLoader: () => Promise<{ default: any }>
 }
-export const LOCALE_MAP: Record<string, LocaleEntry> = {
+const LOCALE_MAP: Record<string, LocaleEntry> = {
     'en-US': { type: 'enUS', loader: () => import('@univerjs/preset-sheets-core/locales/en-US'), tableLoader: () => import('@univerjs/preset-sheets-table/lib/locales/en-US'), sortLoader: () => import('@univerjs/sheets-sort-ui/locale/en-US') },
     'fr-FR': { type: 'frFR', loader: () => import('@univerjs/preset-sheets-core/locales/fr-FR'), tableLoader: () => import('@univerjs/preset-sheets-table/lib/locales/fr-FR'), sortLoader: () => import('@univerjs/sheets-sort-ui/locale/fr-FR') },
     'zh-CN': { type: 'zhCN', loader: () => import('@univerjs/preset-sheets-core/locales/zh-CN'), tableLoader: () => import('@univerjs/preset-sheets-table/lib/locales/zh-CN'), sortLoader: () => import('@univerjs/sheets-sort-ui/locale/zh-CN') },

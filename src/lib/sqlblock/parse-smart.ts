@@ -9,7 +9,7 @@ import {splitSelectParts} from './filters'
 import {stepTypeFromCteName, unquoteId} from './helpers'
 import {extractFinalSelectFromWithQuery, sqlToAst} from './sql-to-ast'
 
-export function tryParseCteChainSmart(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
+function tryParseCteChainSmart(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
     // Accepte tout WITH contenant au moins un CTE _sqlblock_s (même si d'autres ont un nom custom)
     if (!/^WITH\b/i.test(sql) || !/_sqlblock_s\d+/i.test(sql)) return null;
     const ctes = extractCtesWithFullBody(sql);
@@ -38,7 +38,7 @@ export function tryParseCteChainSmart(sql: string, materialize: SqlBlockMaterial
  * Extrait l'expression FROM complète quand la source est une sous-requête (commence par '(').
  * Ex: `SELECT * FROM (VALUES ...) t(a, b)` → `(VALUES ...) t(a, b)`
  */
-export function extractSubquerySource(sql: string): string | null {
+function extractSubquerySource(sql: string): string | null {
     const m = sql.match(/\bFROM\s+(\([\s\S]+)/i);
     if (!m) return null;
     return m[1].replace(/\s*;?\s*$/, '').trim();
@@ -46,7 +46,7 @@ export function extractSubquerySource(sql: string): string | null {
 
 /** Parser simple SELECT (hors CTE) étendu aux patterns P1 (WHERE, ORDER BY, LIMIT).
  * Les patterns non reconnus deviennent un step custom_sql (préserve le SQL sans perte). */
-export function tryParseSimpleSmart(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
+function tryParseSimpleSmart(sql: string, materialize: SqlBlockMaterialize): SqlBlockAst | null {
     // Ne pas traiter les requêtes WITH (CTEs) — gérées par tryParseCteChainSmart
     if (/^WITH\b/i.test(sql)) return null;
     const srcM = sql.match(/^SELECT\s+(?:[\s\S]+?)\s+FROM\s+((?:"[^"]*"|\S+))/i);

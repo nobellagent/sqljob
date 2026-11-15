@@ -37,6 +37,9 @@ jobs:
       - name: Tests
         run: npm test
 
+      - name: Exports morts (knip)
+        run: npm run lint:dead
+
   build:
     name: Build CDN
     runs-on: ubuntu-latest

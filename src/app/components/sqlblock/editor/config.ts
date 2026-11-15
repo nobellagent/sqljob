@@ -38,7 +38,7 @@ export function mutateSqlBlockConfig(cell: any, fn: (cfg: any) => void) {
 }
 
 
-export type ApplyCell = (fn: (cell: any) => void) => void
+type ApplyCell = (fn: (cell: any) => void) => void
 
 
 export function commitAstUpdate(cell: any, newAst: Partial<SqlBlockAst>, apply: ApplyCell) {

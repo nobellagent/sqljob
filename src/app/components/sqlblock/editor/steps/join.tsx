@@ -2,7 +2,7 @@ import type {JoinStep, JoinCondition} from '../../../../../lib/SqlBlockTypes'
 import {AddRowBtn, ColSelect, MoveBtns, RemoveBtn, TxtInput} from '../ui'
 import {moveArr} from '../filters'
 
-export const JOIN_TYPES: { type: JoinStep['joinType']; label: string }[] = [
+const JOIN_TYPES: { type: JoinStep['joinType']; label: string }[] = [
     { type: 'left', label: 'LEFT' }, { type: 'inner', label: 'INNER' },
     { type: 'right', label: 'RIGHT' }, { type: 'full', label: 'FULL' },
     { type: 'anti', label: 'ANTI' },

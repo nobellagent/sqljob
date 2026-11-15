@@ -20,14 +20,14 @@ export type CommandCategory = 'query' | 'project' | 'export' | 'data'
  * - `write`    : modifie le projet (undoable ou non)
  * - `external` : effet hors de l'application (téléchargement, réseau, presse-papier)
  */
-export type CommandPermission = 'read' | 'write' | 'external'
+type CommandPermission = 'read' | 'write' | 'external'
 
-export interface CommandUi {
+interface CommandUi {
     notify(message: string, kind?: 'info' | 'success' | 'error'): void
 }
 
 /** Capacités projet exposées aux commandes. Volontairement minimales. */
-export interface CommandProjectAccess {
+interface CommandProjectAccess {
     runAll(): Promise<void>
     runGroup(path: number[]): Promise<void>
     runCell(path: number[], cellIndex: number): Promise<void>
@@ -54,7 +54,7 @@ export interface CommandHistory {
     size(): number
 }
 
-export interface CommandDuckDb {
+interface CommandDuckDb {
     query(sql: string): Promise<unknown>
 }
 
@@ -166,7 +166,7 @@ export function setCommandContext(context: CommandContext | null): void {
     activeContext = context
 }
 
-export function getCommandContext(): CommandContext {
+function getCommandContext(): CommandContext {
     if (!activeContext) {
         throw new Error('Contexte de commandes non initialisé : appeler setCommandContext() au démarrage.')
     }

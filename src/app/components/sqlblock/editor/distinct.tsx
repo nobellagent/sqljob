@@ -1,13 +1,13 @@
 import {useState, useRef, useEffect} from 'react'
 import {VarInput} from './varInput'
 
-export const DISTINCT_INITIAL_SELECT_LIMIT = 100
+const DISTINCT_INITIAL_SELECT_LIMIT = 100
 
-export const DISTINCT_INITIAL_FROM_LIMIT = 10000
+const DISTINCT_INITIAL_FROM_LIMIT = 10000
 
 /** Dropdown distinct values — mono (=, between) ou multi (IN, NOT IN) */
 
-export function DistinctDropdown({ multi = false, value = '', onChangeSingle, values = [], onChangeMulti, column, fetchDistinctValues, placeholder = 'valeur', className = '' }: {
+function DistinctDropdown({ multi = false, value = '', onChangeSingle, values = [], onChangeMulti, column, fetchDistinctValues, placeholder = 'valeur', className = '' }: {
     multi?: boolean
     value?: string; onChangeSingle?: (v: string) => void
     values?: string[]; onChangeMulti?: (v: string[]) => void

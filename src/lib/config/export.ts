@@ -6,7 +6,7 @@ import {getCellEditableContent, getCellQuery, getCellQueryShowQueryEditor, getCe
 import {generateGroupId, getCellEngine, getCellFileData, getGroupIfQuery} from './cell-files'
 import {SQLJOB_VERSION, normalizeOrder} from './defaults'
 
-    export function _buildQueriesForClean(cell) {
+    function _buildQueriesForClean(cell) {
         if (Array.isArray(cell.queries) && cell.queries.length > 0) {
             const schema = CELL_TYPE_SCHEMAS?.types[cell?.type];
             return cell.queries.map((q, i) => {

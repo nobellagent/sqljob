@@ -6,7 +6,7 @@ import {VarInput} from '../varInput'
 import {FilterGroupUI, moveArr} from '../filters'
 import {useStepInputSchemas} from '../stepParts'
 
-export function ConditionalRuleRow({ rule, index, total, availableCols, fetchDistinctValues, onChange, onRemove, onMoveUp, onMoveDown }: {
+function ConditionalRuleRow({ rule, index, total, availableCols, fetchDistinctValues, onChange, onRemove, onMoveUp, onMoveDown }: {
     rule: ConditionalRule; index: number; total: number
     availableCols: string[]
     fetchDistinctValues?: (col: string, sl: number, fl: number) => Promise<{ values: string[]; hasMore: boolean }>

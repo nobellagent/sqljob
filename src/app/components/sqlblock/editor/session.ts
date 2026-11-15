@@ -1,13 +1,13 @@
 import {DuckDBManager} from '../../../../lib/DuckDBManager'
 
-export const SQLBLOCK_SCHEMA = '_sqlblock'
+const SQLBLOCK_SCHEMA = '_sqlblock'
 
 export const SUBCELL_LIMIT = 50   // lignes dans les tables intermédiaires
 
-export let sqlblockSchemaEnsured = false
+let sqlblockSchemaEnsured = false
 /** Bloque ensureSqlblockSchema après un drop pour éviter la re-création par des opérations en vol. */
 
-export let sqlblockDropped = false
+let sqlblockDropped = false
 
 /** Appelé à l'ouverture de la modale : autorise à nouveau la création du schéma _sqlblock. */
 

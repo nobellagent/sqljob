@@ -5,7 +5,7 @@ import {generateMaterializeQuery, stepSql, quoteId} from '../../../../lib/SqlBlo
 import type {SqlBlockAst} from '../../../../lib/SqlBlockTypes'
 import {SUBCELL_LIMIT, ensureSqlblockSchema, makeTableRef} from './session'
 
-export interface EyeEntry {
+interface EyeEntry {
     rows: Record<string, any>[]
     schemaTypes: Record<string, string>
     hash: string

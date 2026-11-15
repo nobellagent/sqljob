@@ -97,7 +97,7 @@ export interface RenameColumnsStep {
     renames: { from: string; to: string }[];
 }
 
-export interface DeriveColumn {
+interface DeriveColumn {
     name: string;
     expr: string;
     replace: boolean;
@@ -107,8 +107,8 @@ export interface DeriveStep {
     columns: DeriveColumn[];
 }
 
-export type FillStrategy = 'value' | 'mean' | 'median' | 'zero' | 'empty_string';
-export interface FillNullEntry {
+type FillStrategy = 'value' | 'mean' | 'median' | 'zero' | 'empty_string';
+interface FillNullEntry {
     column: string;
     strategy: FillStrategy;
     value?: string;
@@ -120,7 +120,7 @@ export interface FillNullStep {
 
 // ─── P2 — Reshaping & combinaison ────────────────────────────────────────────
 
-export type AggFn =
+type AggFn =
     | 'count' | 'count_distinct' | 'sum' | 'avg' | 'min' | 'max'
     | 'median' | 'stddev' | 'string_agg' | 'list';
 
@@ -136,7 +136,7 @@ export interface GroupByStep {
     aggregations: Aggregation[];
 }
 
-export type JoinType = 'left' | 'inner' | 'right' | 'full' | 'cross' | 'anti';
+type JoinType = 'left' | 'inner' | 'right' | 'full' | 'cross' | 'anti';
 export interface JoinCondition {
     left: string;
     right: string;
@@ -193,7 +193,7 @@ export interface UnnestStep {
     keepEmpty: boolean;
 }
 
-export interface JsonExtraction {
+interface JsonExtraction {
     path: string;
     alias: string;
     targetType?: string;
@@ -204,7 +204,7 @@ export interface JsonExtractStep {
     extractions: JsonExtraction[];
 }
 
-export type DateGranularity = 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
+type DateGranularity = 'second' | 'minute' | 'hour' | 'day' | 'week' | 'month' | 'quarter' | 'year';
 export interface DateTruncStep {
     type: 'date_trunc';
     column: string;
@@ -244,7 +244,7 @@ export interface ConditionalColumnStep {
 
 // ─── Métadonnées communes à tous les steps ────────────────────────────────────
 
-export interface SqlBlockStepMeta {
+interface SqlBlockStepMeta {
     /** Nom de la sous-requête (CTE) — doit être unique parmi les steps */
     name?: string;
     /** Description libre de cette étape */
@@ -343,7 +343,7 @@ export const STEP_LABELS: Record<SqlBlockStep['type'], string> = {
     conditional_column:  'Colonne conditionnelle',
 };
 
-export const STEP_ICONS: Record<SqlBlockStep['type'], string> = {
+const STEP_ICONS: Record<SqlBlockStep['type'], string> = {
     select_columns:  'material-symbols-light:check-box',
     exclude_columns: 'material-symbols-light:indeterminate-check-box',
     change_type:     'material-symbols-light:transform',

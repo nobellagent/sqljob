@@ -3,7 +3,7 @@ import {AddRowBtn, ColSelect, MoveBtns, RemoveBtn} from './ui'
 import {DistinctMultiInput} from './distinct'
 import {VarInput} from './varInput'
 
-export const FILTER_OPS: { op: FilterOp; label: string }[] = [
+const FILTER_OPS: { op: FilterOp; label: string }[] = [
     { op: '=', label: '=' }, { op: '!=', label: '≠' },
     { op: '>', label: '>' }, { op: '<', label: '<' },
     { op: '>=', label: '≥' }, { op: '<=', label: '≤' },
@@ -14,7 +14,7 @@ export const FILTER_OPS: { op: FilterOp; label: string }[] = [
 ]
 
 
-export function FilterConditionRow({ cond, availableCols, onChange, onRemove, onMoveUp, onMoveDown, fetchDistinctValues }: {
+function FilterConditionRow({ cond, availableCols, onChange, onRemove, onMoveUp, onMoveDown, fetchDistinctValues }: {
     cond: FilterCondition; availableCols: string[]
     onChange: (patch: Partial<FilterCondition>) => void
     onRemove: () => void
@@ -76,7 +76,7 @@ export function FilterConditionRow({ cond, availableCols, onChange, onRemove, on
 
 /** Badge AND/OR horizontal séparateur entre groupes de premier niveau */
 
-export function LogicOpBadge({ op, onChange }: { op: 'AND' | 'OR'; onChange: (op: 'AND' | 'OR') => void }) {
+function LogicOpBadge({ op, onChange }: { op: 'AND' | 'OR'; onChange: (op: 'AND' | 'OR') => void }) {
     return (
         <div className="flex items-center gap-1 my-0.5">
             <div className="flex-1 h-px bg-border" />
@@ -95,7 +95,7 @@ export function LogicOpBadge({ op, onChange }: { op: 'AND' | 'OR'; onChange: (op
 
 /** Normalise un FilterGroup vers le format items[] */
 
-export function normalizeFilterGroup(g: FilterGroup): FilterGroup {
+function normalizeFilterGroup(g: FilterGroup): FilterGroup {
     if (g.items !== undefined) return g
     // rétrocompat ancien format conditions[]
     return {
@@ -107,7 +107,7 @@ export function normalizeFilterGroup(g: FilterGroup): FilterGroup {
 
 /** Couleurs de border selon profondeur */
 
-export const GROUP_DEPTH_COLORS = [
+const GROUP_DEPTH_COLORS = [
     'border-border',
     'border-blue-500/40',
     'border-purple-500/40',

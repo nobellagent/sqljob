@@ -69,7 +69,7 @@ export function Icon({ name, size = 16, className = '' }: { name: string; size?:
 }
 
 /** Map type de cellule → nom d'icône */
-export const CELL_TYPE_ICON: Record<string, string> = {
+const CELL_TYPE_ICON: Record<string, string> = {
     markdown:           'edit-note',
     source:             'folder-open',
     uiParameter:        'tune',

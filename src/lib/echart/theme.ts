@@ -15,7 +15,7 @@ export function _axisLabelSize(): number { return _cssClampPx('clamp(9px,1vw,12p
 
 // ─── ECharts default colors (aligned with DaisyUI palette) ──────────────────
 
-export const DEFAULT_COLORS = [
+const DEFAULT_COLORS = [
     '#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de',
     '#3ba272', '#fc8452', '#9a60b4', '#ea7ccc',
 ];
@@ -63,7 +63,7 @@ export function _getChartColors(): string[] {
 
 // ─── Dark theme detection ────────────────────────────────────────────────────
 
-export const DARK_THEMES = new Set([
+const DARK_THEMES = new Set([
     'dark', 'synthwave', 'halloween', 'forest', 'luxury',
     'dracula', 'business', 'night', 'coffee', 'dim', 'sunset', 'black',
     'abyss', 'aqua',

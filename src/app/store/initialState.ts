@@ -1,4 +1,4 @@
-export let loadedConfigSource: unknown = null
+let loadedConfigSource: unknown = null
 
 /** Mémorise la configuration d'origine (restaurée par buildInitialState). */
 export function setLoadedConfigSource(value: unknown) {

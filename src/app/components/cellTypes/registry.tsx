@@ -20,7 +20,7 @@ import {UniverSheetBody} from './UniverSheetBody'
 import {PivotBody} from './PivotBody'
 
 /** Un corps reçoit la cellule, son chemin, son index et des options de rendu. */
-export type CellBodyComponent = ComponentType<CellBodyBaseProps & {showTextResult?: boolean}>
+type CellBodyComponent = ComponentType<CellBodyBaseProps & {showTextResult?: boolean}>
 
 export const CELL_BODIES: Record<string, CellBodyComponent> = {
     markdown: MarkdownBody,

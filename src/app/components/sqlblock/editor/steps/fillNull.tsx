@@ -2,7 +2,7 @@ import type {FillNullStep} from '../../../../../lib/SqlBlockTypes'
 import {AddRowBtn, ColSelect, MoveBtns, RemoveBtn, TxtInput} from '../ui'
 import {moveArr} from '../filters'
 
-export const FILL_STRATEGIES = [
+const FILL_STRATEGIES = [
     { value: 'value', label: 'Valeur fixe' },
     { value: 'zero', label: '0' },
     { value: 'empty_string', label: 'Chaîne vide' },

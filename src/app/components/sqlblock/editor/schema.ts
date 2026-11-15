@@ -1,13 +1,13 @@
 import type {SqlBlockAst, SqlBlockStep} from '../../../../lib/SqlBlockTypes'
 import {useStepEyeData} from './useStepEyeData'
 
-export interface StepSchema {
+interface StepSchema {
     columns: string[]
     colTypes: Record<string, string>
 }
 
 
-export function applyStepToSchema(step: SqlBlockStep, cols: string[], types: Record<string, string>): { cols: string[]; types: Record<string, string> } {
+function applyStepToSchema(step: SqlBlockStep, cols: string[], types: Record<string, string>): { cols: string[]; types: Record<string, string> } {
     switch (step.type) {
         case 'select_columns': {
             if (!step.columns.length) return { cols, types }
