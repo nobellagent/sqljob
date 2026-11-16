@@ -139,6 +139,37 @@ export const appCommands = [
         },
     }),
 
+    // Alias scriptables des formats les plus utilisés (`sqljob.run('export.html')`).
+    defineCommand<void, void>({
+        id: 'export.html',
+        label: 'Exporter en HTML',
+        category: 'export',
+        permission: 'external',
+        execute: async (_input, ctx) => {
+            await ctx.project.exportConfig('html')
+        },
+    }),
+
+    defineCommand<void, void>({
+        id: 'export.json',
+        label: 'Exporter en JSON',
+        category: 'export',
+        permission: 'external',
+        execute: async (_input, ctx) => {
+            await ctx.project.exportConfig('json')
+        },
+    }),
+
+    defineCommand<void, void>({
+        id: 'gist.save',
+        label: 'Enregistrer dans un Gist',
+        category: 'export',
+        permission: 'external',
+        execute: async (_input, ctx) => {
+            await ctx.project.exportConfig('gist')
+        },
+    }),
+
     defineCommand<void, void>({
         id: 'project.openGist',
         label: 'Ouvrir un Gist',

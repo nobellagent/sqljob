@@ -63,6 +63,23 @@ est elle-même une commande, donc accessible depuis l'URL ou l'API.
 Automatisation : `window.sqljob.commands.execute(id, input)` et
 `#cmd=<id>&input=<json>` (le hash est consommé après exécution).
 
+## Plugins de cellule
+
+Un type de cellule peut venir d'un plugin : `src/core/plugins/` valide un manifeste, vérifie
+l'empreinte sha256 des octets téléchargés, puis enregistre le type dans le registre de rendu.
+
+| Élément | Rôle |
+|---|---|
+| `cell-plugin.json` | `id`, `version`, `sqljobMinVersion`, `types`, `permissions`, `entry`, `integrity` |
+| `registry.json` | liste des plugins, `size`, `withdrawn`, `blocklist` (`id` ou `id@version`) |
+| `core/plugins/loader` | installation (taille + empreinte) et activation (`register`/`render`) |
+| `cellTypes/PluginBody` | rendu dans une iframe `sandbox="allow-scripts"` |
+
+Le rendu est isolé de l'application (pas de `allow-same-origin`) ; le code du plugin, lui, reste
+du JavaScript non confiné. Les permissions déclarées sont affichées avant installation et relues
+à l'audit : elles décrivent une intention, elles ne sont pas appliquées par le moteur. Voir
+`docs/plugins.md`.
+
 ## Offline
 
 | Couche | Technologie | Contenu |

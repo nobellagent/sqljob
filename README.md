@@ -27,7 +27,8 @@ quelqu'un d'autre peut ouvrir et exécuter sans rien installer.
 - Export HTML / JSON / Base64 / PDF, partage Gist chiffré (AES-GCM)
 - Intégration en web component : `<sqljob-app>`
 - **Offline** : base DuckDB persistante (OPFS) + PWA (service worker)
-- **Automatisation** : `window.sqljob.commands.execute('notebook.runAll')`
+- **Automatisation** : `window.sqljob.run('notebook.runAll')`
+- **Plugins** : types de cellule tiers (manifeste + registre + empreinte sha256), rendus en iframe sandboxée
 
 ---
 

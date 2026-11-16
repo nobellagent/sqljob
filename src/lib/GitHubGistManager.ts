@@ -1,4 +1,5 @@
 import { GistEncrypt } from './GistEncrypt'
+import {getAppBaseUrl} from './appBase'
 
         export class GitHubGistManager {
             static CLIENT_ID = ''; // À configurer par l'utilisateur
@@ -152,8 +153,8 @@ import { GistEncrypt } from './GistEncrypt'
                     throw new Error('URL de gist invalide');
                 }
 
-                /*const baseUrl = window.location.origin + window.location.pathname;*/
-                const baseUrl = 'https://ihatexcel.github.io/sqljob/';
+                // Lien de partage : celui de l'instance qui l'a produit.
+                const baseUrl = getAppBaseUrl();
                 return `${baseUrl}?gist=${gistId}`;
             }
         }

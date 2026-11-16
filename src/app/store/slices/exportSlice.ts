@@ -13,6 +13,7 @@ import { initializeCell } from '../../../lib/CellConfigService'
 import { applyThemeFromConfig, STORAGE_LIGHT, STORAGE_DARK, STORAGE_PRESET } from '../../components/modals/ThemeCustomModal'
 import type { NotebookStoreState } from '../types'
 import { createThemeActions } from './export/theme'
+import {getAppBaseUrl} from '../../../lib/appBase'
 
 export const createExportSlice = (
     set: StoreApi<NotebookStoreState>['setState'],
@@ -200,8 +201,11 @@ export const createExportSlice = (
             configScriptTag = `    <script type="application/octet-stream" id="defaultConfigBase64">${configBase64}</script>\n`
         }
 
-        const sqljobSrc = 'https://ihatexcel.github.io/sqljob/dist-cdn/sqljob.js'
-        const sqljobCss = 'https://ihatexcel.github.io/sqljob/dist-cdn/sqljob.css'
+        // Le bundle chargé par l'export est celui de l'instance qui exporte
+        // (fork, auto-hébergement, zip) — pas le déploiement d'origine.
+        const appBase = getAppBaseUrl()
+        const sqljobSrc = `${appBase}dist-cdn/sqljob.js`
+        const sqljobCss = `${appBase}dist-cdn/sqljob.css`
 
         const htmlContent = `<!DOCTYPE html>
 <html lang="fr">

@@ -1,5 +1,28 @@
 # Changelog
 
+## 0.5.0 — 2026-11-15
+
+### Plugins de cellule
+
+Un tiers peut ajouter un type de cellule sans toucher au cœur : un module ES, un
+manifeste `cell-plugin.json` et une entrée de registre.
+
+- **`src/core/plugins/`** : `parseManifest` / `parseRegistry` (validation stricte, refus en
+  bloc), `resolveEntry` (blocklist, retrait, version minimale), empreinte sha256 et taille
+  vérifiées avant tout chargement, stockage local des plugins installés.
+- **Chargement** : le module est importé **dans une iframe** `sandbox="allow-scripts"`, sans
+  `allow-same-origin` ; `render({type, cell, rows, theme})` renvoie du HTML. Le code du plugin
+  n'accède ni au DOM de l'application, ni à son stockage, ni à son origine.
+- **Onglet Plugins** (icône puzzle) : chargement du registre, permissions affichées avant
+  installation, activation/désactivation, désinstallation.
+- **Commandes** : `sqljob.run(id, input)` en plus de `sqljob.commands.execute`, et alias
+  `export.html`, `export.json`, `gist.save`.
+- **Plugin d'exemple** `hello-cell` dans `public/plugins/`, registry `public/registry.json` ;
+  l'empreinte est vérifiée par la CI (`tests/plugin-example.test.ts`).
+- **Honnêteté documentée** (`docs/plugins.md`) : l'iframe isole l'affichage, pas l'exécution. Les
+  permissions sont une déclaration, pas une barrière ; le registre protège contre une altération
+  en transit, pas contre un auteur malveillant.
+
 ## 0.4.1 — 2026-11-15
 
 ### Découpage : plus aucun fichier source au-dessus de 20 Ko

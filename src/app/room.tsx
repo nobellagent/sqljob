@@ -24,6 +24,7 @@ import { ExportModal, GistTokenModal, GistResultModal, JsonPassphraseModal } fro
 import { CellConfigModal } from './components/modals/CellConfigModal'
 import { LoopConfigModal, GroupSettingsModal, ChildGroupModal } from './components/modals/GroupModals'
 import { useCommands } from './hooks/useCommands'
+import {getAppBaseUrl} from '../lib/appBase'
 
 function layoutHasPanel(node: any, key: string): boolean {
     if (!node) return false
@@ -123,7 +124,7 @@ function SidebarControls() {
             {/* Documentation (gist) */}
             <RoomShell.SidebarButton
                 title="Documentation"
-                onClick={() => window.open('https://ihatexcel.github.io/sqljob/?gist=68cd597ba5da05ceba24fb975c05384f', '_blank')}
+                onClick={() => window.open(`${getAppBaseUrl()}?gist=68cd597ba5da05ceba24fb975c05384f`, '_blank')}
                 isSelected={false}
                 icon={BookHeartIcon}
             />

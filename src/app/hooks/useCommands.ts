@@ -155,6 +155,8 @@ export function useCommands(): void {
         setCommandContext(context)
 
         const api = {
+            /** Raccourci scriptable : `sqljob.run('export.html')`. */
+            run: (id: string, input?: unknown) => executeCommand(id, input),
             commands: {
                 execute: (id: string, input?: unknown) => executeCommand(id, input),
                 undo: () => executeCommand<undefined, boolean>('history.undo'),
