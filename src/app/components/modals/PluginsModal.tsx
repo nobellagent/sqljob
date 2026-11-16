@@ -30,7 +30,7 @@ function permissionLabel(permission: PluginPermission): string {
 }
 
 export function PluginsModal({open, onOpenChange}: {open: boolean; onOpenChange: (open: boolean) => void}) {
-    const {installed, registry, busy, error} = usePlugins()
+    const {installed, embedded, registry, busy, error} = usePlugins()
     const [url, setUrl] = useState(getRegistryUrl())
     const [localError, setLocalError] = useState<string | null>(null)
     // Un fichier exporté s'ouvre en file:// : aucun registre n'y est joignable.
@@ -85,6 +85,24 @@ export function PluginsModal({open, onOpenChange}: {open: boolean; onOpenChange:
                     <div className="text-sm text-destructive border border-destructive/40 rounded px-2 py-1">
                         {localError ?? error}
                     </div>
+                )}
+
+                {embedded.length > 0 && (
+                    <section className="space-y-2">
+                        <h3 className="text-sm font-semibold">Embarqués dans le document ({embedded.length})</h3>
+                        {embedded.map(plugin => (
+                            <div key={plugin.id} className="border border-border rounded p-2 space-y-1">
+                                <div className="flex items-center justify-between gap-2">
+                                    <div>
+                                        <span className="font-medium text-sm">{plugin.name ?? plugin.id}</span>
+                                        <Badge variant="outline" className="ml-2 text-xs">v{plugin.version}</Badge>
+                                        <Badge variant="secondary" className="ml-2 text-xs">embarqué</Badge>
+                                    </div>
+                                </div>
+                                <p className="text-xs text-muted-foreground">Types : {plugin.types.join(', ')}</p>
+                            </div>
+                        ))}
+                    </section>
                 )}
 
                 <section className="space-y-2">

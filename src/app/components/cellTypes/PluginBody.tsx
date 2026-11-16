@@ -60,11 +60,11 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell}) => {
 
     const payload = useMemo(() => JSON.stringify({
         type: cell.type,
-        cell: {id: cell.id, title: cell.title, json: cell.json ?? {}},
+        cell: {id: cell.id, title: cell.title, name: cell.name, json: cell.json ?? {}},
         rows: cell._results ?? [],
         theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
         source: info?.source,
-    }), [cell.type, cell.id, cell.title, cell.json, cell._results, info?.source])
+    }), [cell.type, cell.id, cell.title, cell.name, cell.json, cell._results, info?.source])
 
     useEffect(() => {
         function onMessage(event: MessageEvent) {

@@ -33,13 +33,15 @@ const REGISTRY_URL_KEY = 'sqljob.plugins.registryUrl'
 
 interface PluginsState {
     installed: InstalledPlugin[]
+    /** Plugins fournis par le document exporté (actifs, non désinstallables). */
+    embedded: {id: string; name?: string; version: string; types: string[]}[]
     registry: PluginRegistry | null
     active: string[]
     busy: boolean
     error: string | null
 }
 
-let state: PluginsState = {installed: [], registry: null, active: [], busy: false, error: null}
+let state: PluginsState = {installed: [], embedded: [], registry: null, active: [], busy: false, error: null}
 const listeners = new Set<() => void>()
 
 function emit(): void {
@@ -233,7 +235,15 @@ function activateEmbedded(plugins: EmbeddedPlugin[]): void {
         }
     }
     const ids = plugins.map(plugin => plugin.manifest.id)
-    setState({active: [...new Set([...state.active, ...ids])]})
+    setState({
+        active: [...new Set([...state.active, ...ids])],
+        embedded: plugins.map(plugin => ({
+            id: plugin.manifest.id,
+            name: plugin.manifest.name,
+            version: plugin.manifest.version,
+            types: plugin.manifest.types,
+        })),
+    })
 }
 
 /**
