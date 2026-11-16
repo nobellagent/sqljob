@@ -22,6 +22,8 @@ export function SqlEditorWidget({
     cellIndex,
     placeholder = 'SELECT * FROM source1',
     queryType = 'query',
+    /** Nom exact de la requête à éditer (types de cellule fournis par un plugin). */
+    queryKey = null,
     languageLabel = null,
     languageIcon = null,
     badgeClass = null,
@@ -43,7 +45,7 @@ export function SqlEditorWidget({
 
     const [copyDone, setCopyDone] = useState(false)
 
-    const queryName = queryType === 'query2' ? ConfigManager.getQuery2Name(cell) : 'main'
+    const queryName = queryKey || (queryType === 'query2' ? ConfigManager.getQuery2Name(cell) : 'main')
     const languageType = ConfigManager.getCellEngine(cell, queryName)
     const isJs = languageType === 'js'
     const isText = languageType === 'text'

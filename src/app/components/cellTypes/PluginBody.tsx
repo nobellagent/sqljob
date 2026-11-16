@@ -14,7 +14,11 @@
  * émettre des requêtes réseau et consommer du CPU.
  */
 import {useEffect, useMemo, useRef, useState} from 'react'
+import {useShallow} from 'zustand/react/shallow'
 import type {CellBodyBaseProps} from '../cellTypes/types'
+import {useNotebookStore} from '../../store/notebookStore'
+import {SqlEditorWidget} from '../SqlEditorWidget'
+import {ConfigManager} from '../../../lib/ConfigManager'
 import {getPluginType} from '../../plugins/pluginTypes'
 import {DuckDBManager} from '../../../lib/DuckDBManager'
 import {
@@ -116,8 +120,13 @@ function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promi
     })
 }
 
-export const PluginBody: React.FC<CellBodyBaseProps> = ({cell}) => {
+export const PluginBody: React.FC<CellBodyBaseProps> = ({cell, path, cellIndex}) => {
     const info = getPluginType(cell.type)
+    const devMode = useNotebookStore(useShallow(state => state.devMode))
+    const declaredQueries = info?.decl?.queries ?? []
+    // Les requêtes sont visibles si l'une est vide (cellule fraîchement ajoutée)
+    // ou en mode dev, comme les cellules natives.
+    const showQueries = devMode || declaredQueries.some(query => !ConfigManager.getCellQuery(cell, query.key)?.trim())
     const frameRef = useRef<HTMLIFrameElement>(null)
     const [ready, setReady] = useState(false)
     const [error, setError] = useState<string | null>(null)
@@ -236,6 +245,26 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell}) => {
 
     return (
         <div className="flex flex-col min-h-0 flex-1">
+            {showQueries && declaredQueries.length > 0 && (
+                <div className="flex flex-col gap-2 pb-2">
+                    {declaredQueries.map(query => (
+                        <details key={query.key} className="border border-border rounded px-2 py-1">
+                            <summary className="text-xs font-medium cursor-pointer select-none">
+                                {query.label}
+                            </summary>
+                            <div className="pt-2">
+                                <SqlEditorWidget
+                                    cell={cell}
+                                    path={path}
+                                    cellIndex={cellIndex}
+                                    queryType="query"
+                                    queryKey={query.key}
+                                />
+                            </div>
+                        </details>
+                    ))}
+                </div>
+            )}
             {error && (
                 <div className="text-xs text-destructive px-1 pb-1">
                     Plugin « {info.pluginId} » : {error}
