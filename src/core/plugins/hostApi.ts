@@ -65,8 +65,9 @@ export function isReadOnlyQuery(sql: string): boolean {
 /** Nom de fichier sûr pour un téléchargement déclenché par un plugin. */
 export function sanitizeDownloadName(name: unknown): string {
     if (typeof name !== 'string') return 'export.bin'
-    const cleaned = name
-        .replace(/[\u0000-\u001f\u007f]/g, '')
+    const cleaned = Array.from(name)
+        .filter(char => char.charCodeAt(0) > 31 && char.charCodeAt(0) !== 127)
+        .join('')
         .replace(/[\\/]/g, '_')
         .replace(/^\.+/, '')
         .trim()
