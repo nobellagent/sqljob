@@ -104,6 +104,23 @@ Conclusion pratique : n'installer que des plugins dont on a lu le code, ou dont
 on fait confiance à l'auteur. Le registre et l'empreinte protègent contre une
 altération en transit, pas contre un auteur malveillant.
 
+## Exports
+
+L'export **HTML** embarque les plugins utilisés par le document — uniquement ceux-là :
+
+- un `<script type="application/json" id="sqljobPluginBundle">` contient, pour chaque plugin dont un
+  type apparaît dans une cellule, le manifeste, l'URL d'origine et la source du module (≤ 512 Ko) ;
+- au démarrage, le document active ces plugins sans registre ni réseau ;
+- le rendu se fait dans l'iframe à partir d'un `blob:` créé localement, donc il fonctionne même
+  ouvert par `file://` ;
+- l'onglet Plugins affiche « Embarqués dans le document » et explique que le registre n'est pas
+  joignable hors ligne.
+
+Deux limites à connaître :
+
+- l'export **ZIP** n'embarque pas les plugins : les cellules de plugin y restent vides ;
+- si le module dépasse 512 Ko, seule son URL est conservée : le rendu demandera alors le réseau.
+
 ## Ajouter un plugin
 
 1. Écrire le module et le manifeste, calculer l'empreinte :

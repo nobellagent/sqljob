@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.5.2 — 2026-11-16
+
+### Les exports HTML embarquent les plugins du document
+
+- L'export HTML n'emportait aucun plugin : une cellule d'un type fourni par un plugin restait vide,
+  et l'onglet Plugins du fichier exporté échouait sur `fetch('registry.json')`
+  (`NetworkError when attempting to fetch resource`).
+- **Sélection** : seuls les plugins dont un type est utilisé par le document sont embarqués
+  (`collectDocumentCellTypes`, parcours récursif des groupes et sous-groupes).
+- **Embarquement** : manifeste + URL d'origine + source du module (≤ 512 Ko) dans
+  `<script type="application/json" id="sqljobPluginBundle">` ; les `<` sont échappés en `\u003c`.
+- **Chargement** : au démarrage, les plugins embarqués sont activés sans réseau ; l'iframe crée un
+  `blob:` à partir de la source, donc le rendu fonctionne depuis `file://`.
+- **Onglet Plugins** : section « Embarqués dans le document », et message explicite hors ligne à la
+  place de l'erreur réseau.
+- Limite assumée : l'export ZIP n'embarque pas les plugins — il reste le format « tout le bundle »,
+  à compléter si un besoin réel apparaît.
+
 ## 0.5.1 — 2026-11-16
 
 ### Les exports chargent la version de l'instance, plus celle du projet d'origine
