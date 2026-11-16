@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-16T19:14:45.331Z",
+  "generatedAt": "2026-11-16T19:29:26.572Z",
   "algorithm": "sha384",
   "files": {
     "manifest.webmanifest": {
@@ -15,15 +15,15 @@
       "size": 2282
     },
     "plugins/pdfme-plugin/cell-plugin.json": {
-      "sha384": "sha384-veBuTqnFa9hpAGlmCHJ2lKTOUoIvayd9t9RBA1YO7cq4/uz/NO65CpAkXg2Fxy4l",
+      "sha384": "sha384-LcQR/A6v9Utdp0I08jKt8U62PHZ2XvGW8xueILBsXa/IyZneU6vzHG5j7aKoSSxp",
       "size": 1082
     },
     "plugins/pdfme-plugin/pdfme-plugin.mjs": {
-      "sha384": "sha384-Pty9zjORpLJA0LR5aWBWAoIEnpLFGINDYutgDoPr5zJMh1GVZ2w2xTX3d0ChvWKd",
-      "size": 1702892
+      "sha384": "sha384-bFUrKAgs4bvYmMe9EDuHv/FANoejnOTPoILf55R11s1X49OroUlfw+GzzKXVyT6+",
+      "size": 1703057
     },
     "registry.json": {
-      "sha384": "sha384-WO1t2mp3TT6lZ2yIBniisFwBjNWXiAbRLCa9NT/0Ar47oFHAox4Spd49wnV+Xitb",
+      "sha384": "sha384-jR1OzApM5lpqR4NGwKTs0qWCIqubRBa+q0GqS76ntIVtnSUmRD1jC1TLqChH2usu",
       "size": 2664
     },
     "sqljob--wIyWEZg.js": {
