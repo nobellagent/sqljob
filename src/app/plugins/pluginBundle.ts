@@ -11,7 +11,7 @@ import {
 import type {InstalledPlugin} from '../../core/plugins/store'
 
 /** Au-delà de cette taille, la source n'est pas embarquée (URL d'origine conservée). */
-export const MAX_EMBEDDED_SOURCE_BYTES = 512 * 1024
+export const MAX_EMBEDDED_SOURCE_BYTES = 4 * 1024 * 1024
 
 interface BuildOptions {
     pages: unknown

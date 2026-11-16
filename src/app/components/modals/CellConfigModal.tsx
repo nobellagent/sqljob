@@ -225,6 +225,14 @@ export function CellConfigModal() {
                                             placeholder={param.placeholder}
                                             min={param.min} step="any" />
                                     </div>
+                                ) : param.inputType === 'text' ? (
+                                    <div className="space-y-1">
+                                        <Label>{param.label}</Label>
+                                        <Input className="h-8 text-sm"
+                                            value={getCellValueByPath(cell, param.key) || ''}
+                                            placeholder={param.placeholder || ''}
+                                            onChange={e => setValue(param.key, e.target.value)} />
+                                    </div>
                                 ) : param.inputType === 'univerConfig' ? (
                                     <UniverConfigEditor cell={cell} apply={apply} />
                                 ) : null}

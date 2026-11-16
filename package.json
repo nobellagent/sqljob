@@ -1,6 +1,6 @@
 {
   "name": "@ihatexcel/sqljob",
-  "version": "0.5.2",
+  "version": "0.6.0",
   "private": false,
   "type": "module",
   "description": "Local-first SQL notebook for data preparation and sharing — DuckDB in the browser, no server.",

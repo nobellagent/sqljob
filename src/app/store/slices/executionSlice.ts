@@ -4,6 +4,7 @@ import { createSqlExec } from './execution/sqlExec'
 import { createSimpleCells } from './execution/simpleCells'
 import { createDocuments } from './execution/documents'
 import { createRichCells } from './execution/richCells'
+import { createPluginCells } from './execution/pluginCells'
 import type {StoreApi} from 'zustand'
 import type {NotebookStoreState} from '../types'
 
@@ -19,5 +20,6 @@ export const createExecutionSlice = (
     ...createSqlExec(set, get),
     ...createSimpleCells(set, get),
     ...createDocuments(set, get),
+    ...createPluginCells(set, get),
     ...createRichCells(set, get),
 })

@@ -70,15 +70,17 @@ l'empreinte sha256 des octets téléchargés, puis enregistre le type dans le re
 
 | Élément | Rôle |
 |---|---|
-| `cell-plugin.json` | `id`, `version`, `sqljobMinVersion`, `types`, `permissions`, `entry`, `integrity` |
+| `cell-plugin.json` | `id`, `version`, `sqljobMinVersion`, `types`, `permissions`, `entry`, `integrity`, `cellTypes` |
 | `registry.json` | liste des plugins, `size`, `withdrawn`, `blocklist` (`id` ou `id@version`) |
 | `core/plugins/loader` | installation (taille + empreinte) et activation (`register`/`render`) |
+| `core/plugins/cellSchema` | traduction de `cellTypes` en schéma natif (requêtes + champs) |
+| `core/plugins/hostApi` | permissions vérifiées : `query` en lecture seule, `download`, stockage |
 | `cellTypes/PluginBody` | rendu dans une iframe `sandbox="allow-scripts"` |
 
 Le rendu est isolé de l'application (pas de `allow-same-origin`) ; le code du plugin, lui, reste
-du JavaScript non confiné. Les permissions déclarées sont affichées avant installation et relues
-à l'audit : elles décrivent une intention, elles ne sont pas appliquées par le moteur. Voir
-`docs/plugins.md`.
+du JavaScript non confiné. Les permissions sont **vérifiées à chaque appel** de l'API hôte, mais
+elles ne bornent ni le CPU ni le réseau : un plugin peut toujours faire des requêtes sortantes et
+consommer de la mémoire. Voir `docs/plugins.md`.
 
 ## Offline
 

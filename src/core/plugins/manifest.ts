@@ -16,8 +16,40 @@ export type PluginPermission =
     | 'duckdb:read'
     | 'duckdb:write'
     | 'ui:render'
+    | 'ui:download'
     | 'storage:local'
     | `network:${string}`
+
+export type PluginFieldInput = 'text' | 'textarea' | 'number' | 'checkbox' | 'select'
+
+export interface PluginFieldDecl {
+    label: string
+    inputType: PluginFieldInput
+    placeholder?: string
+    tooltip?: string
+    required?: boolean
+    rows?: number
+    min?: number
+    default?: string | number | boolean
+    options?: {value: string; label: string}[]
+}
+
+export interface PluginQueryDecl {
+    /** Nom de la requête, utilisé comme clé des résultats. */
+    key: string
+    label: string
+}
+
+/** Description d'un type de cellule fourni par le plugin. */
+export interface PluginCellTypeDecl {
+    type: string
+    title?: string
+    icon?: string
+    /** Requêtes exécutées par le notebook avant le rendu. */
+    queries?: PluginQueryDecl[]
+    /** Champs de configuration, rendus par la modale native. */
+    schema?: Record<string, PluginFieldDecl>
+}
 
 export interface PluginManifest {
     id: string
@@ -30,6 +62,7 @@ export interface PluginManifest {
     permissions: PluginPermission[]
     entry: string
     integrity: string
+    cellTypes?: PluginCellTypeDecl[]
 }
 
 export interface RegistryEntry extends PluginManifest {
@@ -72,7 +105,9 @@ const ENTRY_RE = /^(?!\/)(?!.*\.\.)[A-Za-z0-9._/-]+\.m?js$/
 const INTEGRITY_RE = /^sha256-[A-Za-z0-9+/]{43}=$/
 const HOST_RE = /^[a-z0-9.-]+(?::\d+)?$/i
 
-const PERMISSIONS = new Set(['duckdb:read', 'duckdb:write', 'ui:render', 'storage:local'])
+const PERMISSIONS = new Set(['duckdb:read', 'duckdb:write', 'ui:render', 'ui:download', 'storage:local'])
+const FIELD_INPUTS = new Set(['text', 'textarea', 'number', 'checkbox', 'select'])
+const FIELD_KEY_RE = /^[a-z][a-zA-Z0-9_]{0,24}$/
 
 function isRecord(value: unknown): value is Record<string, unknown> {
     return typeof value === 'object' && value !== null && !Array.isArray(value)
@@ -129,6 +164,160 @@ function checkTypes(value: unknown, errors: string[]): string[] {
     return out
 }
 
+function checkCellTypes(value: unknown, types: string[], errors: string[]): PluginCellTypeDecl[] {
+    if (value === undefined) return []
+    if (!Array.isArray(value)) {
+        errors.push('cellTypes doit être un tableau')
+        return []
+    }
+    if (value.length > 8) errors.push('un plugin déclare au plus 8 descriptions de type')
+
+    const out: PluginCellTypeDecl[] = []
+    const seen = new Set<string>()
+
+    for (const raw of value) {
+        if (!isRecord(raw)) {
+            errors.push('description de type non objet')
+            continue
+        }
+        const type = typeof raw.type === 'string' ? raw.type.trim() : ''
+        if (!types.includes(type)) {
+            errors.push(`cellTypes : le type « ${type} » n'est pas déclaré dans types`)
+            continue
+        }
+        if (seen.has(type)) {
+            errors.push(`cellTypes : type décrit deux fois : « ${type} »`)
+            continue
+        }
+        seen.add(type)
+
+        const decl: PluginCellTypeDecl = {type}
+        if (raw.title !== undefined) {
+            if (typeof raw.title !== 'string' || !raw.title.trim()) errors.push(`cellTypes.${type} : titre invalide`)
+            else decl.title = raw.title.trim()
+        }
+        if (raw.icon !== undefined) {
+            if (typeof raw.icon !== 'string' || !raw.icon.trim() || raw.icon.length > 40) {
+                errors.push(`cellTypes.${type} : icône invalide`)
+            } else decl.icon = raw.icon.trim()
+        }
+
+        const queries = checkQueryDecls(raw.queries, type, errors)
+        if (queries.length > 0) decl.queries = queries
+
+        const schema = checkFields(raw.schema, type, errors)
+        if (Object.keys(schema).length > 0) decl.schema = schema
+
+        out.push(decl)
+    }
+    return out
+}
+
+function checkQueryDecls(value: unknown, type: string, errors: string[]): PluginQueryDecl[] {
+    if (value === undefined) return []
+    if (!Array.isArray(value) || value.length === 0) {
+        errors.push(`cellTypes.${type}.queries doit être un tableau non vide`)
+        return []
+    }
+    if (value.length > 4) errors.push(`cellTypes.${type} : au plus 4 requêtes`)
+    const out: PluginQueryDecl[] = []
+    for (const raw of value) {
+        if (!isRecord(raw)) {
+            errors.push(`cellTypes.${type}.queries : entrée non objet`)
+            continue
+        }
+        const key = typeof raw.key === 'string' ? raw.key.trim() : ''
+        if (!FIELD_KEY_RE.test(key)) {
+            errors.push(`cellTypes.${type}.queries : clé invalide « ${key} »`)
+            continue
+        }
+        if (out.some(q => q.key === key)) {
+            errors.push(`cellTypes.${type}.queries : clé dupliquée « ${key} »`)
+            continue
+        }
+        const label = typeof raw.label === 'string' && raw.label.trim() ? raw.label.trim() : key
+        out.push({key, label})
+    }
+    return out
+}
+
+function checkFields(value: unknown, type: string, errors: string[]): Record<string, PluginFieldDecl> {
+    if (value === undefined) return {}
+    if (!isRecord(value)) {
+        errors.push(`cellTypes.${type}.schema doit être un objet`)
+        return {}
+    }
+    const entries = Object.entries(value)
+    if (entries.length > 32) errors.push(`cellTypes.${type}.schema : au plus 32 champs`)
+    const out: Record<string, PluginFieldDecl> = {}
+
+    for (const [key, raw] of entries) {
+        const where = `cellTypes.${type}.schema.${key}`
+        if (!FIELD_KEY_RE.test(key)) {
+            errors.push(`${where} : nom de champ invalide`)
+            continue
+        }
+        if (!isRecord(raw)) {
+            errors.push(`${where} : description non objet`)
+            continue
+        }
+        const inputType = typeof raw.inputType === 'string' ? raw.inputType : ''
+        if (!FIELD_INPUTS.has(inputType)) {
+            errors.push(`${where} : inputType inconnu « ${inputType} »`)
+            continue
+        }
+        const label = typeof raw.label === 'string' && raw.label.trim() ? raw.label.trim() : key
+        const field: PluginFieldDecl = {label, inputType: inputType as PluginFieldDecl['inputType']}
+
+        if (raw.placeholder !== undefined) {
+            if (typeof raw.placeholder !== 'string') errors.push(`${where} : placeholder doit être une chaîne`)
+            else field.placeholder = raw.placeholder
+        }
+        if (raw.tooltip !== undefined) {
+            if (typeof raw.tooltip !== 'string') errors.push(`${where} : tooltip doit être une chaîne`)
+            else field.tooltip = raw.tooltip
+        }
+        if (raw.required !== undefined) {
+            if (typeof raw.required !== 'boolean') errors.push(`${where} : required doit être un booléen`)
+            else field.required = raw.required
+        }
+        if (raw.rows !== undefined) {
+            if (typeof raw.rows !== 'number' || raw.rows < 1 || raw.rows > 40) errors.push(`${where} : rows hors bornes`)
+            else field.rows = raw.rows
+        }
+        if (raw.min !== undefined) {
+            if (typeof raw.min !== 'number') errors.push(`${where} : min doit être un nombre`)
+            else field.min = raw.min
+        }
+        if (raw.default !== undefined) {
+            const ok = ['string', 'number', 'boolean'].includes(typeof raw.default)
+            if (!ok) errors.push(`${where} : default doit être une chaîne, un nombre ou un booléen`)
+            else field.default = raw.default as string | number | boolean
+        }
+        if (inputType === 'select') {
+            if (!Array.isArray(raw.options) || raw.options.length === 0 || raw.options.length > 32) {
+                errors.push(`${where} : select exige 1 à 32 options`)
+            } else {
+                const options: {value: string; label: string}[] = []
+                for (const opt of raw.options) {
+                    if (!isRecord(opt) || typeof opt.value !== 'string' || !opt.value) {
+                        errors.push(`${where} : option sans value`)
+                        continue
+                    }
+                    if (options.some(o => o.value === opt.value)) {
+                        errors.push(`${where} : value dupliquée « ${opt.value} »`)
+                        continue
+                    }
+                    options.push({value: opt.value, label: typeof opt.label === 'string' && opt.label ? opt.label : opt.value})
+                }
+                field.options = options
+            }
+        }
+        out[key] = field
+    }
+    return out
+}
+
 /** Valide un manifeste et renvoie une copie normalisée (sans champ inconnu). */
 export function parseManifest(raw: unknown): PluginManifest {
     const errors: string[] = []
@@ -155,6 +344,7 @@ export function parseManifest(raw: unknown): PluginManifest {
 
     const types = checkTypes(raw.types, errors)
     const permissions = checkPermissions(raw.permissions ?? [], errors)
+    const cellTypes = checkCellTypes(raw.cellTypes, types, errors)
 
     for (const key of ['name', 'description', 'homepage'] as const) {
         if (raw[key] !== undefined && typeof raw[key] !== 'string') {
@@ -177,6 +367,7 @@ export function parseManifest(raw: unknown): PluginManifest {
         ...(raw.name ? { name: raw.name as string } : {}),
         ...(raw.description ? { description: raw.description as string } : {}),
         ...(raw.homepage ? { homepage: raw.homepage as string } : {}),
+        ...(cellTypes.length > 0 ? { cellTypes } : {}),
     }
 }
 

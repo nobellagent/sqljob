@@ -22,6 +22,7 @@ const SKIP_KEYS = new Set([
     'pivotInstance',
     'univerAPI',
     'view',
+    '_pluginResults',
 ])
 
 function isDomNode(value: unknown): boolean {

@@ -35,11 +35,72 @@ et rien n'est écrit dans le stockage local.
 | `id` | minuscules, chiffres, `-` et `.` ; 64 caractères au plus |
 | `version`, `sqljobMinVersion` | SemVer `x.y.z` |
 | `types` | 1 à 8 types, jamais un type du cœur (`sql`, `markdown`, …) |
-| `permissions` | `duckdb:read`, `duckdb:write`, `ui:render`, `storage:local`, `network:<hôte>` |
-| `entry` | chemin relatif, `.js` ou `.mjs`, sans `..` |
+| `permissions` | `duckdb:read`, `duckdb:write`, `ui:render`, `ui:download`, `storage:local`, `network:<hôte>` |
+| `entry` | chemin relatif, `.js` ou `.mjs`, sans `..` (module bundle ≤ 8 Mo) |
+| `cellTypes` | description facultative de chaque type : titre, icône, requêtes, champs |
 | `integrity` | `sha256-<base64>` des octets du module |
 
 Un manifeste invalide est refusé en bloc : l'application ne tente pas de réparer.
+
+## Types de cellule déclarés
+
+Par défaut, un plugin ne fournit qu'un rendu : le type apparaît dans « Ajouter une cellule »
+avec son titre, sans configuration. `cellTypes` va plus loin — le type se comporte alors comme
+un type natif, sans code d'interface supplémentaire.
+
+```json
+"cellTypes": [{
+  "type": "hello",
+  "title": "Hello",
+  "icon": "puzzle",
+  "queries": [
+    {"key": "data", "label": "Requête de données"},
+    {"key": "filename", "label": "Nom du fichier"}
+  ],
+  "schema": {
+    "salutation": {"label": "Salutation", "inputType": "text", "default": "Bonjour"},
+    "seuil":      {"label": "Seuil", "inputType": "number", "min": 0},
+    "mode":       {"label": "Mode", "inputType": "select", "options": [{"value": "a", "label": "A"}]},
+    "compact":    {"label": "Compact", "inputType": "checkbox", "default": false}
+  }
+}]
+```
+
+- **`schema`** alimente la fiche de configuration de la cellule (champs `text`, `textarea`,
+  `number`, `select`, `checkbox`). L'application les rend elle-même : le plugin n'écrit aucune UI.
+  Les valeurs arrivent dans `render` par `cell.json`.
+- **`queries`** (1 à 4) fait entrer la cellule dans le DAG : le notebook exécute chaque requête
+  dans l'ordre, avec les paramètres habituels (`{{_name}}`, conditions, boucles), et poste les
+  résultats au plugin par clé, dans `queries`.
+
+```js
+export function render({cell, queries}) {
+    return `<p>${queries.data?.length ?? 0} ligne(s)</p>`
+}
+```
+
+Un type sans requête reçoit `queries = {}` : il ne coûte rien au moteur d'exécution.
+
+## API hôte
+
+Un plugin peut appeler l'application, mais chaque appel est **vérifié** côté hôte, dans
+`src/core/plugins/hostApi.ts` — pas seulement affiché à l'installation.
+
+| Appel (dans l'iframe) | Permission exigée | Contrôle |
+|---|---|---|
+| `sqljobHost.query(sql)` | `duckdb:read` | une seule instruction, `SELECT` ou `WITH`, refus si écriture ou `;` multiple, délai de 15 s |
+| `sqljobHost.download(name, content, {mime, encoding})` | `ui:download` | nom assaini, contenu texte ou base64 |
+| `sqljobHost.storage.get/set/remove(key, value)` | `storage:local` | clé préfixée par l'id du plugin, 100 Ko par valeur |
+
+```js
+const rows = await sqljobHost.query('SELECT * FROM source1 LIMIT 5')
+sqljobHost.download('rapport.csv', csv, {mime: 'text/csv'})
+await sqljobHost.storage.set('derniere-vue', JSON.stringify({page: 2}))
+```
+
+`duckdb:write` n'ouvre **aucun** appel : une cellule n'a pas à écrire dans la base pour afficher.
+Une permission non déclarée fait échouer l'appel avec un message explicite, et le test
+`tests/plugin-host-api.test.ts` le vérifie.
 
 ## Registre `registry.json`
 
@@ -92,9 +153,12 @@ arbitraire :
   ses cookies, ou remplacer l'interface.
 - **Ce que l'iframe n'empêche pas** : émettre des requêtes réseau, consommer du
   CPU ou de la mémoire, exploiter une faille du navigateur.
-- **Ce que les permissions garantissent** : elles sont affichées avant
-  l'installation et relues à l'audit du code. Elles ne sont pas appliquées par le
-  moteur — il n'y a pas de médiation des appels DuckDB ou réseau.
+- **Ce que les permissions garantissent** : chaque appel de l'API hôte
+  (`query`, `download`, stockage) est contrôlé avant exécution ; la requête SQL est
+  en lecture seule et bornée dans le temps.
+- **Ce qu'elles ne garantissent pas** : `duckdb:read` peut lire des fichiers ou des URL
+  distantes via SQL (`read_csv('https://…')`), et l'iframe peut toujours faire du réseau.
+  La permission limite les effets de bord, pas l'exfiltration.
 - **Fenêtre de substitution** : l'empreinte est vérifiée sur les octets
   téléchargés à l'installation ; l'iframe recharge ensuite le module depuis son
   URL. Un serveur compromis entre les deux pourrait servir autre chose. Pour un
@@ -109,7 +173,7 @@ altération en transit, pas contre un auteur malveillant.
 L'export **HTML** embarque les plugins utilisés par le document — uniquement ceux-là :
 
 - un `<script type="application/json" id="sqljobPluginBundle">` contient, pour chaque plugin dont un
-  type apparaît dans une cellule, le manifeste, l'URL d'origine et la source du module (≤ 512 Ko) ;
+  type apparaît dans une cellule, le manifeste, l'URL d'origine et la source du module (≤ 4 Mo) ;
 - au démarrage, le document active ces plugins sans registre ni réseau ;
 - le rendu se fait dans l'iframe à partir d'un `blob:` créé localement, donc il fonctionne même
   ouvert par `file://` ;
@@ -119,7 +183,7 @@ L'export **HTML** embarque les plugins utilisés par le document — uniquement 
 Deux limites à connaître :
 
 - l'export **ZIP** n'embarque pas les plugins : les cellules de plugin y restent vides ;
-- si le module dépasse 512 Ko, seule son URL est conservée : le rendu demandera alors le réseau.
+- si le module dépasse 4 Mo, seule son URL est conservée : le rendu demandera alors le réseau.
 
 ## Ajouter un plugin
 

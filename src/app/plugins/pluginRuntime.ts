@@ -138,7 +138,16 @@ async function activate(record: InstalledPlugin): Promise<void> {
         appVersion: APP_VERSION,
         importModule: loadModule,
         registerCellType({type, title}) {
-            setPluginType({type, title, pluginId: record.manifest.id, entryUrl: record.entryUrl})
+            const decl = record.manifest.cellTypes?.find(cell => cell.type === type)
+            setPluginType({
+                type,
+                title: decl?.title ?? title,
+                pluginId: record.manifest.id,
+                entryUrl: record.entryUrl,
+                icon: decl?.icon,
+                permissions: record.manifest.permissions,
+                decl,
+            })
             registerCellBody(type, PluginBody)
         },
     })
@@ -224,12 +233,16 @@ function readEmbeddedPlugins(): EmbeddedPlugin[] {
 function activateEmbedded(plugins: EmbeddedPlugin[]): void {
     for (const plugin of plugins) {
         for (const type of plugin.manifest.types) {
+            const decl = plugin.manifest.cellTypes?.find(cell => cell.type === type)
             setPluginType({
                 type,
-                title: plugin.manifest.name ?? type,
+                title: decl?.title ?? plugin.manifest.name ?? type,
                 pluginId: plugin.manifest.id,
                 entryUrl: plugin.entryUrl,
                 source: plugin.source,
+                icon: decl?.icon,
+                permissions: plugin.manifest.permissions,
+                decl,
             })
             registerCellBody(type, PluginBody)
         }

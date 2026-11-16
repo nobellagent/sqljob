@@ -1,5 +1,32 @@
 # Changelog
 
+## 0.6.0 — 2026-11-16
+
+### Types de cellule déclarés par le manifeste, API hôte contrôlée
+
+Un plugin peut désormais se comporter comme un type natif, et appeler l'application par une API
+dont chaque requête est vérifiée côté hôte.
+
+- **`cellTypes`** (P6.1) : chaque type peut déclarer un titre, une icône, jusqu'à 4 **requêtes**
+  et des **champs de configuration** (`text`, `textarea`, `number`, `select`, `checkbox`).
+  Le schéma est injecté dans `CELL_TYPE_SCHEMAS` à l'activation : création, fiche de configuration,
+  export et exécution fonctionnent sans code d'interface côté plugin.
+- **Participation au DAG** : `executePluginCell` exécute les requêtes déclarées dans l'ordre, avec
+  les paramètres habituels, et poste les résultats par clé (`queries.data`, `queries.filename`).
+  Un type sans requête reçoit `queries = {}`.
+- **API hôte** (P6.3) : `sqljobHost.query`, `sqljobHost.download`, `sqljobHost.storage.*`.
+  Chaque appel exige la permission correspondante (`duckdb:read`, `ui:download`, `storage:local`),
+  vérifiée à l'exécution et pas seulement affichée. La requête doit être un `SELECT`/`WITH` unique,
+  sans écriture, avec un délai de 15 s ; les noms de téléchargement sont assainis ; le stockage est
+  préfixé par l'identifiant du plugin et borné à 100 Ko par valeur.
+- **Limites** (P6.2) : module jusqu'à 8 Mo, embarquement dans un export jusqu'à 4 Mo (au-delà,
+  l'URL d'origine est conservée).
+- **Plugin d'exemple** enrichi : `hello-cell` déclare une requête, trois champs et affiche le
+  nombre de lignes reçues.
+
+Ce qui n'est **pas** fait, volontairement : la cellule pdfme reste native (décision de Théo), et
+l'iframe n'isole toujours pas l'exécution (CPU, réseau) — c'est écrit dans `docs/plugins.md`.
+
 ## 0.5.2 — 2026-11-16
 
 ### Les exports HTML embarquent les plugins du document

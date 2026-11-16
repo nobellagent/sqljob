@@ -3,16 +3,28 @@
  *
  * Le module du plugin est importé **dans l'iframe** (`sandbox="allow-scripts"`,
  * sans `allow-same-origin`) : il n'a donc accès ni au DOM de l'application, ni
- * à son `localStorage`, ni à son origine. Le parent se contente de poster la
- * cellule et les lignes de résultat.
+ * à son `localStorage`, ni à son origine.
  *
- * Limite assumée : ce n'est pas une sandbox forte. Un plugin peut faire des
- * requêtes réseau et consommer du CPU ; les permissions déclarées au manifeste
- * sont une déclaration d'intention, pas un mécanisme d'application.
+ * Les appels sortants passent par un protocole `postMessage` et sont **vérifiés
+ * ici**, pas seulement déclarés dans le manifeste : `query` exige `duckdb:read`
+ * et une requête en lecture seule, `download` exige `ui:download`, le stockage
+ * exige `storage:local` et reste préfixé par l'identifiant du plugin.
+ *
+ * Limite assumée : ce n'est pas une sandbox forte. Un plugin peut toujours
+ * émettre des requêtes réseau et consommer du CPU.
  */
 import {useEffect, useMemo, useRef, useState} from 'react'
 import type {CellBodyBaseProps} from '../cellTypes/types'
 import {getPluginType} from '../../plugins/pluginTypes'
+import {DuckDBManager} from '../../../lib/DuckDBManager'
+import {
+    assertHostPermission,
+    isReadOnlyQuery,
+    sanitizeDownloadName,
+    storageKeyFor,
+    type HostMethod,
+} from '../../../core/plugins/hostApi'
+import type {PluginManifest} from '../../../core/plugins/manifest'
 
 const HARNESS = `<!doctype html>
 <html><head><meta charset="utf-8">
@@ -25,9 +37,42 @@ const HARNESS = `<!doctype html>
 <script type="module">
 const root = document.getElementById('root')
 let seq = 0
+let requestId = 0
+const pending = new Map()
+
+function call(method, params) {
+  return new Promise((resolve, reject) => {
+    const id = 'r' + (++requestId)
+    pending.set(id, {resolve, reject})
+    parent.postMessage({kind: 'sqljob:request', id, method, params}, '*')
+  })
+}
+
+// API hôte : chaque appel est contrôlé côté application.
+window.sqljobHost = {
+  query: (sql) => call('query', {sql}),
+  download: (name, content, options) => call('download', {name, content, mime: options && options.mime, encoding: options && options.encoding}),
+  storage: {
+    get: (key) => call('storage.get', {key}),
+    set: (key, value) => call('storage.set', {key, value}),
+    remove: (key) => call('storage.remove', {key}),
+  },
+}
+
 window.addEventListener('message', async (event) => {
   const msg = event.data
-  if (!msg || msg.kind !== 'sqljob:render') return
+  if (!msg) return
+
+  if (msg.kind === 'sqljob:host-response') {
+    const entry = pending.get(msg.id)
+    if (!entry) return
+    pending.delete(msg.id)
+    if (msg.ok) entry.resolve(msg.result)
+    else entry.reject(new Error(msg.error || 'appel refusé'))
+    return
+  }
+
+  if (msg.kind !== 'sqljob:render') return
   const token = ++seq
   try {
     const target = msg.source
@@ -36,7 +81,13 @@ window.addEventListener('message', async (event) => {
     const mod = await import(target)
     const render = mod.render || (mod.default && mod.default.render)
     if (typeof render !== 'function') throw new Error("le module n'exporte pas de fonction render")
-    const html = await render({type: msg.type, cell: msg.cell, rows: msg.rows, theme: msg.theme})
+    const html = await render({
+      type: msg.type,
+      cell: msg.cell,
+      rows: msg.rows,
+      queries: msg.queries || {},
+      theme: msg.theme,
+    })
     if (token !== seq) return
     root.innerHTML = typeof html === 'string' ? html : ''
     parent.postMessage({kind: 'sqljob:plugin-rendered', ok: true, type: msg.type}, '*')
@@ -52,6 +103,19 @@ window.addEventListener('message', async (event) => {
 parent.postMessage({kind: 'sqljob:plugin-ready'}, '*')
 </script></body></html>`
 
+const QUERY_TIMEOUT_MS = 15_000
+const MAX_STORAGE_VALUE = 100 * 1024
+
+function withTimeout<T>(promise: Promise<T>, ms: number, message: string): Promise<T> {
+    return new Promise<T>((resolve, reject) => {
+        const timer = setTimeout(() => reject(new Error(message)), ms)
+        promise.then(
+            value => { clearTimeout(timer); resolve(value) },
+            error => { clearTimeout(timer); reject(error) },
+        )
+    })
+}
+
 export const PluginBody: React.FC<CellBodyBaseProps> = ({cell}) => {
     const info = getPluginType(cell.type)
     const frameRef = useRef<HTMLIFrameElement>(null)
@@ -62,9 +126,69 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell}) => {
         type: cell.type,
         cell: {id: cell.id, title: cell.title, name: cell.name, json: cell.json ?? {}},
         rows: cell._results ?? [],
+        queries: cell._pluginResults ?? {},
         theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
         source: info?.source,
-    }), [cell.type, cell.id, cell.title, cell.name, cell.json, cell._results, info?.source])
+    }), [cell.type, cell.id, cell.title, cell.name, cell.json, cell._results, cell._pluginResults, info?.source])
+
+    // Appels hôte : contrôlés à chaque requête, jamais une fois pour toutes.
+    async function handleRequest(method: HostMethod, params: Record<string, unknown> | undefined): Promise<unknown> {
+        const manifest = {permissions: info?.permissions ?? []} as PluginManifest
+        assertHostPermission(manifest, method)
+        const pluginId = info?.pluginId ?? 'inconnu'
+
+        switch (method) {
+            case 'query': {
+                const sql = typeof params?.sql === 'string' ? params.sql : ''
+                if (!isReadOnlyQuery(sql)) throw new Error('requête refusée : lecture seule attendue (SELECT ou WITH)')
+                return await withTimeout(
+                    DuckDBManager.executeQuery(sql),
+                    QUERY_TIMEOUT_MS,
+                    `requête interrompue après ${QUERY_TIMEOUT_MS / 1000} s`,
+                )
+            }
+            case 'download': {
+                const name = sanitizeDownloadName(params?.name)
+                const raw = typeof params?.content === 'string' ? params.content : ''
+                const mime = typeof params?.mime === 'string' ? params.mime : 'application/octet-stream'
+                let blob: Blob
+                if (params?.encoding === 'base64') {
+                    const binary = atob(raw)
+                    const bytes = new Uint8Array(binary.length)
+                    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i)
+                    blob = new Blob([bytes], {type: mime})
+                } else {
+                    blob = new Blob([raw], {type: mime})
+                }
+                const url = URL.createObjectURL(blob)
+                const anchor = document.createElement('a')
+                anchor.href = url
+                anchor.download = name
+                document.body.appendChild(anchor)
+                anchor.click()
+                anchor.remove()
+                setTimeout(() => URL.revokeObjectURL(url), 10_000)
+                return {name, size: blob.size}
+            }
+            case 'storage.get': {
+                const key = storageKeyFor(pluginId, params?.key)
+                return window.localStorage.getItem(key)
+            }
+            case 'storage.set': {
+                const key = storageKeyFor(pluginId, params?.key)
+                const value = typeof params?.value === 'string' ? params.value : JSON.stringify(params?.value ?? null)
+                if (value.length > MAX_STORAGE_VALUE) throw new Error('valeur de stockage trop volumineuse (max 100 Ko)')
+                window.localStorage.setItem(key, value)
+                return true
+            }
+            case 'storage.remove': {
+                window.localStorage.removeItem(storageKeyFor(pluginId, params?.key))
+                return true
+            }
+            default:
+                throw new Error(`méthode inconnue : ${String(method)}`)
+        }
+    }
 
     useEffect(() => {
         function onMessage(event: MessageEvent) {
@@ -74,10 +198,23 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell}) => {
             if (data.kind === 'sqljob:plugin-rendered') {
                 setError(data.ok ? null : String(data.error ?? 'erreur inconnue'))
             }
+            if (data.kind !== 'sqljob:request') return
+            if (event.source !== frameRef.current?.contentWindow) return
+
+            const id = String(data.id ?? '')
+            const method = data.method as HostMethod
+            void handleRequest(method, data.params)
+                .then(
+                    result => frameRef.current?.contentWindow?.postMessage({kind: 'sqljob:host-response', id, ok: true, result}, '*'),
+                    err => frameRef.current?.contentWindow?.postMessage(
+                        {kind: 'sqljob:host-response', id, ok: false, error: err instanceof Error ? err.message : String(err)},
+                        '*',
+                    ),
+                )
         }
         window.addEventListener('message', onMessage)
         return () => window.removeEventListener('message', onMessage)
-    }, [])
+    }, [info?.permissions, info?.pluginId])
 
     useEffect(() => {
         if (!ready || !info || !payload) return
