@@ -14,6 +14,9 @@ import { applyThemeFromConfig, STORAGE_LIGHT, STORAGE_DARK, STORAGE_PRESET } fro
 import type { NotebookStoreState } from '../types'
 import { createThemeActions } from './export/theme'
 import {getAppBaseUrl} from '../../../lib/appBase'
+import {createPluginStore} from '../../../core/plugins/store'
+import {PLUGIN_BUNDLE_ELEMENT_ID, serializePluginBundle} from '../../../core/plugins/bundle'
+import {buildEmbeddedPlugins} from '../../plugins/pluginBundle'
 
 export const createExportSlice = (
     set: StoreApi<NotebookStoreState>['setState'],
@@ -201,6 +204,16 @@ export const createExportSlice = (
             configScriptTag = `    <script type="application/octet-stream" id="defaultConfigBase64">${configBase64}</script>\n`
         }
 
+        // Plugins utilisés par le document : embarqués pour que l'export
+        // fonctionne hors ligne, sans registre ni réseau.
+        const embeddedPlugins = await buildEmbeddedPlugins({
+            pages,
+            installed: createPluginStore(window.localStorage).list(),
+        })
+        const pluginScriptTag = embeddedPlugins.length > 0
+            ? `    <script type="application/json" id="${PLUGIN_BUNDLE_ELEMENT_ID}">${serializePluginBundle(embeddedPlugins)}</script>\n`
+            : ''
+
         // Le bundle chargé par l'export est celui de l'instance qui exporte
         // (fork, auto-hébergement, zip) — pas le déploiement d'origine.
         const appBase = getAppBaseUrl()
@@ -214,7 +227,7 @@ export const createExportSlice = (
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>sqljob</title>
     <link rel="stylesheet" href="${sqljobCss}">
-${configScriptTag}${embeddedScripts}</head>
+${pluginScriptTag}${configScriptTag}${embeddedScripts}</head>
 <body>
     <script src="${sqljobSrc}" type="module"></script>
     <sqljob-app></sqljob-app>

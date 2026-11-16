@@ -33,10 +33,12 @@ export function PluginsModal({open, onOpenChange}: {open: boolean; onOpenChange:
     const {installed, registry, busy, error} = usePlugins()
     const [url, setUrl] = useState(getRegistryUrl())
     const [localError, setLocalError] = useState<string | null>(null)
+    // Un fichier exporté s'ouvre en file:// : aucun registre n'y est joignable.
+    const offline = typeof window !== 'undefined' && window.location.protocol === 'file:'
 
     useEffect(() => {
-        if (open && !registry) loadRegistry().catch(() => undefined)
-    }, [open, registry])
+        if (open && !registry && !offline) loadRegistry().catch(() => undefined)
+    }, [open, registry, offline])
 
     const installedIds = new Set(installed.map(p => p.manifest.id))
     const available = (registry?.plugins ?? []).filter(p => !installedIds.has(p.id))
@@ -71,6 +73,13 @@ export function PluginsModal({open, onOpenChange}: {open: boolean; onOpenChange:
                         L'empreinte est vérifiée avant toute installation.
                     </p>
                 </div>
+
+                {offline && (
+                    <div className="text-xs text-muted-foreground border border-border rounded px-2 py-1">
+                        Fichier exporté : le registre n'est pas joignable hors ligne. Les plugins
+                        utilisés par le document sont déjà embarqués et actifs.
+                    </div>
+                )}
 
                 {(error || localError) && (
                     <div className="text-sm text-destructive border border-destructive/40 rounded px-2 py-1">

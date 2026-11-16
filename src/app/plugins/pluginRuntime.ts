@@ -20,6 +20,11 @@ import {
     type PluginStore,
 } from '../../core/plugins'
 import {APP_VERSION} from '../../core/plugins/version'
+import {
+    PLUGIN_BUNDLE_ELEMENT_ID,
+    parsePluginBundle,
+    type EmbeddedPlugin,
+} from '../../core/plugins/bundle'
 import {registerCellBody, unregisterCellBody, listCellBodyTypes} from '../components/cellTypes/registry'
 import {PluginBody} from '../components/cellTypes/PluginBody'
 import {deletePluginType, deletePluginTypesOf, listPluginTypes, setPluginType} from './pluginTypes'
@@ -82,12 +87,32 @@ async function loadModule(url: string): Promise<PluginModule> {
     return import(/* @vite-ignore */ url) as Promise<PluginModule>
 }
 
+/** Message lisible quand la page ne peut pas joindre un registre. */
+function registryUnavailableMessage(): string | null {
+    if (typeof window === 'undefined') return 'contexte sans navigateur'
+    if (window.location.protocol === 'file:') {
+        return "Fichier exporté : aucun registre n'est accessible hors ligne. Les plugins du document sont déjà chargés."
+    }
+    return null
+}
+
 /** Charge le registre distant et le valide. */
 export async function loadRegistry(): Promise<PluginRegistry> {
+    const unavailable = registryUnavailableMessage()
+    if (unavailable) {
+        setState({busy: false, error: unavailable})
+        throw new Error(unavailable)
+    }
+
     setState({busy: true, error: null})
     try {
         const url = getRegistryUrl()
-        const response = await fetch(url, {cache: 'no-cache'})
+        let response: Response
+        try {
+            response = await fetch(url, {cache: 'no-cache'})
+        } catch {
+            throw new Error(`registre inaccessible depuis cette page (réseau ou CORS) : ${url}`)
+        }
         if (!response.ok) throw new Error(`registre inaccessible (${response.status}) : ${url}`)
         const registry = parseRegistry(await response.json())
         setState({registry, busy: false})
@@ -178,11 +203,48 @@ export async function setEnabled(id: string, enabled: boolean): Promise<void> {
     }
 }
 
+/** Lit le bundle embarqué dans un export HTML, s'il existe. */
+function readEmbeddedPlugins(): EmbeddedPlugin[] {
+    if (typeof document === 'undefined') return []
+    const element = document.getElementById(PLUGIN_BUNDLE_ELEMENT_ID)
+    if (!element || !element.textContent) return []
+    try {
+        return parsePluginBundle(JSON.parse(element.textContent))
+    } catch {
+        return []
+    }
+}
+
+/**
+ * Active les plugins embarqués dans le document.
+ * Leur source accompagne le type : le rendu fonctionne sans réseau.
+ */
+function activateEmbedded(plugins: EmbeddedPlugin[]): void {
+    for (const plugin of plugins) {
+        for (const type of plugin.manifest.types) {
+            setPluginType({
+                type,
+                title: plugin.manifest.name ?? type,
+                pluginId: plugin.manifest.id,
+                entryUrl: plugin.entryUrl,
+                source: plugin.source,
+            })
+            registerCellBody(type, PluginBody)
+        }
+    }
+    const ids = plugins.map(plugin => plugin.manifest.id)
+    setState({active: [...new Set([...state.active, ...ids])]})
+}
+
 /**
  * Au démarrage : charge les plugins installés et active ceux qui le sont.
  * Un plugin fautif est signalé, les autres continuent de fonctionner.
  */
 export async function initPlugins(): Promise<void> {
+    // 1. Plugins embarqués dans un export HTML : aucun réseau requis.
+    activateEmbedded(readEmbeddedPlugins())
+
+    // 2. Plugins installés localement.
     const installed = store().list()
     setState({installed})
     if (installed.length === 0) return
@@ -190,6 +252,7 @@ export async function initPlugins(): Promise<void> {
     const failures: string[] = []
     for (const record of installed) {
         if (!record.enabled) continue
+        if (state.active.includes(record.manifest.id)) continue
         try {
             await activate(record)
         } catch (error) {

@@ -30,7 +30,10 @@ window.addEventListener('message', async (event) => {
   if (!msg || msg.kind !== 'sqljob:render') return
   const token = ++seq
   try {
-    const mod = await import(msg.entry)
+    const target = msg.source
+      ? URL.createObjectURL(new Blob([msg.source], {type: 'text/javascript'}))
+      : msg.entry
+    const mod = await import(target)
     const render = mod.render || (mod.default && mod.default.render)
     if (typeof render !== 'function') throw new Error("le module n'exporte pas de fonction render")
     const html = await render({type: msg.type, cell: msg.cell, rows: msg.rows, theme: msg.theme})
@@ -60,7 +63,8 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell}) => {
         cell: {id: cell.id, title: cell.title, json: cell.json ?? {}},
         rows: cell._results ?? [],
         theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
-    }), [cell.type, cell.id, cell.title, cell.json, cell._results])
+        source: info?.source,
+    }), [cell.type, cell.id, cell.title, cell.json, cell._results, info?.source])
 
     useEffect(() => {
         function onMessage(event: MessageEvent) {

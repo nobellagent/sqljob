@@ -11,6 +11,8 @@ interface PluginTypeInfo {
     pluginId: string
     /** URL absolue du module ES du plugin. */
     entryUrl: string
+    /** Source du module, quand elle est embarquée dans le document exporté. */
+    source?: string
 }
 
 const types = new Map<string, PluginTypeInfo>()
