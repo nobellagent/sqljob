@@ -81,6 +81,24 @@ export function render({cell, queries}) {
 
 Un type sans requête reçoit `queries = {}` : il ne coûte rien au moteur d'exécution.
 
+### Interagir : `mount`
+
+`render` renvoie du HTML ; pour un bouton, un formulaire ou un rendu progressif, exposez
+`mount(root, contexte)`. Il est appelé **dans l'iframe** après l'insertion du HTML, avec le même
+contexte que `render`, plus `host` (l'API hôte).
+
+```js
+export function mount(root, ctx) {
+    root.querySelector('button')?.addEventListener('click', async () => {
+        const rows = await ctx.host.query('SELECT count(*) AS n FROM source1')
+        ctx.host.download('compte.csv', String(rows[0].n), {mime: 'text/csv'})
+    })
+}
+```
+
+C'est ce que fait `pdfme-plugin` (`public/plugins/pdfme-plugin/`) : le PDF est généré au clic, puis
+téléchargé par `sqljobHost.download`, avec la permission `ui:download`.
+
 ## API hôte
 
 Un plugin peut appeler l'application, mais chaque appel est **vérifié** côté hôte, dans

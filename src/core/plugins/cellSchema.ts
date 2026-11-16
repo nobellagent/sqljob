@@ -42,6 +42,12 @@ export function buildCellSchema(decl: PluginCellTypeDecl): PluginCellSchema {
                 engine: 'sql',
                 showQueryEditor: false,
             })),
+            // Valeurs initiales des champs déclarés (appliquées à la création).
+            ...Object.fromEntries(
+                fields
+                    .filter(([, field]) => field.default !== undefined)
+                    .map(([key, field]) => [key, field.default]),
+            ),
         },
         commonParams: ['name', 'queries'],
         exportFields: ['queries', ...fields.map(([key]) => key)],

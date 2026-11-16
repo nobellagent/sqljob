@@ -1,7 +1,8 @@
 /**
- * Le plugin d'exemple est le contrat vivant : ce test vérifie, sur les fichiers
- * réellement publiés dans `public/`, que le registre, le manifeste et les octets
- * du module sont cohérents. Une empreinte périmée casse la CI, pas l'utilisateur.
+ * Les plugins publiés sont le contrat vivant : ce test vérifie, sur les fichiers
+ * réellement servis depuis `public/`, que le registre, les manifestes et les
+ * octets des modules sont cohérents. Une empreinte périmée casse la CI, pas
+ * l'utilisateur au moment de l'installation.
  */
 import {readFileSync} from 'node:fs'
 import {resolve} from 'node:path'
@@ -10,28 +11,48 @@ import {describe, expect, it, vi} from 'vitest'
 import {parseManifest, parseRegistry} from '../src/core/plugins/manifest'
 import {sha256Integrity, verifySize} from '../src/core/plugins/integrity'
 import {APP_VERSION} from '../src/core/plugins/version'
+import {MAX_PLUGIN_BYTES} from '../src/core/plugins/limits'
 
 const root = process.cwd()
 const registryRaw = JSON.parse(readFileSync(resolve(root, 'public/registry.json'), 'utf-8'))
-const manifestRaw = JSON.parse(readFileSync(resolve(root, 'public/plugins/hello-cell/cell-plugin.json'), 'utf-8'))
-const modulePath = resolve(root, 'public/plugins/hello-cell/hello-cell.mjs')
-const moduleBytes = readFileSync(modulePath)
-const moduleUrl = pathToFileURL(modulePath).href
+const registry = parseRegistry(registryRaw)
 
-describe('plugin d’exemple', () => {
-    it('a un registre et un manifeste valides et cohérents', () => {
-        const registry = parseRegistry(registryRaw)
-        expect(registry.plugins).toHaveLength(1)
-        expect(() => parseManifest(manifestRaw)).not.toThrow()
-        expect(manifestRaw.id).toBe(registry.plugins[0].id)
-        expect(manifestRaw.types).toEqual(registry.plugins[0].types)
+describe('registre publié', () => {
+    it('valide et contient au moins un plugin', () => {
+        expect(registry.plugins.length).toBeGreaterThan(0)
     })
 
-    it('a une empreinte et une taille qui correspondent aux octets publiés', async () => {
-        const entry = parseRegistry(registryRaw).plugins[0]
-        expect(await sha256Integrity(new Uint8Array(moduleBytes))).toBe(entry.integrity)
-        expect(() => verifySize(new Uint8Array(moduleBytes), entry.size)).not.toThrow()
-    })
+    for (const entry of registry.plugins) {
+        describe(entry.id, () => {
+            const modulePath = resolve(root, 'public', entry.entry)
+            const bytes = readFileSync(modulePath)
+
+            it('a un manifeste cohérent avec le registre', () => {
+                const manifestPath = resolve(root, 'public/plugins', entry.id, 'cell-plugin.json')
+                const raw = JSON.parse(readFileSync(manifestPath, 'utf-8'))
+                expect(() => parseManifest(raw)).not.toThrow()
+                expect(raw.id).toBe(entry.id)
+                expect(raw.types).toEqual(entry.types)
+                expect(raw.integrity).toBe(entry.integrity)
+                expect(raw.version).toBe(entry.version)
+            })
+
+            it('a une empreinte et une taille qui correspondent aux octets publiés', async () => {
+                expect(await sha256Integrity(new Uint8Array(bytes))).toBe(entry.integrity)
+                expect(() => verifySize(new Uint8Array(bytes), entry.size)).not.toThrow()
+            })
+
+            it('reste sous la limite de taille', () => {
+                expect(bytes.length).toBeLessThanOrEqual(MAX_PLUGIN_BYTES)
+                expect(bytes.length).toBe(entry.size)
+            })
+        })
+    }
+})
+
+describe('plugin hello-cell', () => {
+    const manifestRaw = JSON.parse(readFileSync(resolve(root, 'public/plugins/hello-cell/cell-plugin.json'), 'utf-8'))
+    const moduleUrl = pathToFileURL(resolve(root, 'public/plugins/hello-cell/hello-cell.mjs')).href
 
     it('expose un render qui produit du HTML échappé', async () => {
         const module = await import(moduleUrl)
@@ -53,6 +74,22 @@ describe('plugin d’exemple', () => {
         await module.register({registerCellType, log, appVersion: APP_VERSION, plugin: manifestRaw})
         expect(registerCellType).toHaveBeenCalledWith({type: 'hello', title: 'Hello'})
         expect(log).toHaveBeenCalled()
+    })
+})
+
+describe('plugin pdfme-plugin', () => {
+    it('déclare deux requêtes et un template dans son manifeste', () => {
+        const raw = JSON.parse(readFileSync(resolve(root, 'public/plugins/pdfme-plugin/cell-plugin.json'), 'utf-8'))
+        const decl = raw.cellTypes[0]
+        expect(decl.queries.map((q: any) => q.key)).toEqual(['data', 'filename'])
+        expect(decl.schema.template.inputType).toBe('textarea')
+        expect(raw.permissions).toContain('ui:download')
+    })
+
+    it('publie un module qui expose render et mount', () => {
+        const source = readFileSync(resolve(root, 'public/plugins/pdfme-plugin/pdfme-plugin.mjs'), 'utf-8')
+        expect(source).toMatch(/render/)
+        expect(source).toMatch(/mount/)
     })
 })
 

@@ -89,12 +89,26 @@ window.addEventListener('message', async (event) => {
     const html = await render({
       type: msg.type,
       cell: msg.cell,
+      config: msg.config || {},
       rows: msg.rows,
       queries: msg.queries || {},
       theme: msg.theme,
     })
     if (token !== seq) return
     root.innerHTML = typeof html === 'string' ? html : ''
+    // Un plugin qui a besoin d'interagir expose une fonction mount(root, contexte).
+    const mount = mod.mount || (mod.default && mod.default.mount)
+    if (typeof mount === 'function') {
+      await mount(root, {
+        type: msg.type,
+        cell: msg.cell,
+        config: msg.config || {},
+        rows: msg.rows,
+        queries: msg.queries || {},
+        theme: msg.theme,
+        host: window.sqljobHost,
+      })
+    }
     parent.postMessage({kind: 'sqljob:plugin-rendered', ok: true, type: msg.type}, '*')
   } catch (error) {
     if (token !== seq) return
@@ -132,14 +146,21 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell, path, cellIndex})
     const [ready, setReady] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const payload = useMemo(() => JSON.stringify(toJsonSafe({
+    const payload = useMemo(() => {
+        // Les champs déclarés au manifeste sont des propriétés de la cellule :
+        // on ne transmet qu'eux, pas les internes (_results, _status…).
+        const configKeys = Object.keys(info?.decl?.schema ?? {})
+        const config = Object.fromEntries(configKeys.map(key => [key, (cell as unknown as Record<string, unknown>)[key]]))
+        return JSON.stringify(toJsonSafe({
         type: cell.type,
         cell: {id: cell.id, title: cell.title, name: cell.name, json: cell.json ?? {}},
+        config,
         rows: cell._results ?? [],
         queries: cell._pluginResults ?? {},
         theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
         source: info?.source,
-    })), [cell.type, cell.id, cell.title, cell.name, cell.json, cell._results, cell._pluginResults, info?.source])
+        }))
+    }, [cell, cell.type, cell.id, cell.title, cell.name, cell.json, cell._results, cell._pluginResults, info?.source, info?.decl])
 
     // Appels hôte : contrôlés à chaque requête, jamais une fois pour toutes.
     async function handleRequest(method: HostMethod, params: Record<string, unknown> | undefined): Promise<unknown> {

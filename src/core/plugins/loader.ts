@@ -10,6 +10,7 @@
  * `storage`) : rien ici ne dépend du DOM, donc tout est testable en Node.
  */
 import {verifyIntegrity, verifySize} from './integrity'
+import {MAX_PLUGIN_BYTES} from './limits'
 import {
     PluginError,
     assertTypeAvailable,
@@ -88,9 +89,6 @@ function alreadyInstalled(store: PluginStore, entry: RegistryEntry): InstalledPl
  * Lève une `PluginError` : `not_found`, `blocked`, `withdrawn`, `incompatible`,
  * `size_mismatch`, `integrity_mismatch`.
  */
-/** Taille maximale d'un module de plugin, en octets. */
-const MAX_PLUGIN_BYTES = 8 * 1024 * 1024
-
 export async function installPlugin(options: InstallOptions): Promise<InstalledPlugin> {
     const {registry, id, currentVersion, store, fetchBytes, baseUrl} = options
     const entry = resolveEntry(registry, id, currentVersion)

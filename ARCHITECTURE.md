@@ -75,6 +75,7 @@ l'empreinte sha256 des octets téléchargés, puis enregistre le type dans le re
 | `core/plugins/loader` | installation (taille + empreinte) et activation (`register`/`render`) |
 | `core/plugins/cellSchema` | traduction de `cellTypes` en schéma natif (requêtes + champs) |
 | `core/plugins/hostApi` | permissions vérifiées : `query` en lecture seule, `download`, stockage |
+| `plugins/pdfme-plugin` | plugin d'exemple avancé : template pdfme, requêtes, `mount` + téléchargement |
 | `cellTypes/PluginBody` | rendu dans une iframe `sandbox="allow-scripts"` |
 
 Le rendu est isolé de l'application (pas de `allow-same-origin`) ; le code du plugin, lui, reste

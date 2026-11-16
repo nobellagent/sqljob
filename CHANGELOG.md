@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.7.0 — 2026-11-16
+
+### Plugins interactifs, et pdfme en plugin
+
+- **`mount(root, contexte)`** : un plugin peut désormais interagir après le rendu. Le contexte
+  contient `{type, cell, config, rows, queries, theme, host}`. Sans `mount`, un plugin reste un
+  simple rendu HTML ; avec, il gère des boutons sans que l'application connaisse son interface.
+- **`config`** : les champs déclarés dans `cellTypes[].schema` sont transmis sous forme d'objet
+  (`config.template`), et leurs valeurs par défaut sont appliquées à la création de la cellule.
+- **`pdfme-plugin`** publié au registre : génération de PDF depuis un template pdfme, avec les deux
+  requêtes (`data`, `filename`) et un bouton de téléchargement. Module bundlé de 1,6 Mo
+  (`npm run build:plugin-pdfme`), sous la limite d'installation.
+- La cellule pdfme **native reste en place** : le plugin vit à côté, sous le type distinct
+  `pdfme-plugin`. C'est la démonstration que l'architecture P6 supporte un type avancé sans code
+  dans le cœur — pas encore un remplacement.
+- Tests : le registre publié est vérifié de bout en bout (chaque entrée → manifeste → octets →
+  empreinte → taille), pour tous les plugins, pas seulement l'exemple.
+
 ## 0.6.0 — 2026-11-16
 
 ### Types de cellule déclarés par le manifeste, API hôte contrôlée
