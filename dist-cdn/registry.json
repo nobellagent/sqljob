@@ -50,6 +50,49 @@
         }
       ],
       "size": 2282
+    },
+    {
+      "id": "pdfme-plugin",
+      "name": "PDF (pdfme, plugin)",
+      "description": "Génère un PDF à partir d'un template pdfme et des lignes d'une requête. Même rendu que la cellule pdfme native, sans code dans le cœur.",
+      "version": "1.0.0",
+      "sqljobMinVersion": "0.6.0",
+      "types": [
+        "pdfme-plugin"
+      ],
+      "permissions": [
+        "ui:render",
+        "ui:download"
+      ],
+      "entry": "plugins/pdfme-plugin/pdfme-plugin.mjs",
+      "integrity": "sha256-BOOCGas5GmV6HmPKbHu8PeJbFoc3WjMa2PPi5707wmI=",
+      "cellTypes": [
+        {
+          "type": "pdfme-plugin",
+          "title": "PDF (pdfme, plugin)",
+          "icon": "file-text",
+          "queries": [
+            {
+              "key": "data",
+              "label": "Requête de données"
+            },
+            {
+              "key": "filename",
+              "label": "Nom du fichier PDF"
+            }
+          ],
+          "schema": {
+            "template": {
+              "label": "Template pdfme (JSON)",
+              "inputType": "textarea",
+              "rows": 12,
+              "required": true,
+              "placeholder": "{\"basePdf\": {...}, \"schemas\": [...]}"
+            }
+          }
+        }
+      ],
+      "size": 1702892
     }
   ]
 }
