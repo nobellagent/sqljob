@@ -85,13 +85,11 @@ export function render({cell, queries, config, theme}) {
         : rows.length === 0
             ? 'Aucune ligne : vérifiez la requête de données.'
             : `${rows.length} ligne(s) prête(s) pour ${fileNameFrom(queries, rows.length)}`
-    const debug = `clés=${Object.keys(queries || {}).join(',') || 'aucune'} rows=${rows.length}`
 
     return `
         <div style="font:13px/1.5 system-ui,-apple-system,sans-serif;color:${color}">
             <div style="font-size:15px;font-weight:600;margin-bottom:2px">📑 ${escapeHtml(title)}</div>
             <div style="color:${muted};margin-bottom:8px">${escapeHtml(hint)}</div>
-            <div style="color:#9ca3af;font-size:11px;margin-bottom:6px">debug: ${escapeHtml(debug)}</div>
             <button data-role="generate" ${ready ? '' : 'disabled'}
                 style="font:inherit;padding:6px 12px;border-radius:6px;border:1px solid ${ready ? '#2563eb' : '#9ca3af'};
                        background:${ready ? '#2563eb' : 'transparent'};color:${ready ? '#fff' : muted};

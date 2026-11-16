@@ -29,6 +29,13 @@ describe('toJsonSafe', () => {
         expect(safe).toEqual({ok: 1})
     })
 
+    it('sérialise une valeur partagée par deux clés (lignes et queries.data)', () => {
+        const rows = [{a: 1}]
+        const safe = toJsonSafe({rows, queries: {data: rows}}) as any
+        expect(safe.rows).toEqual([{a: 1}])
+        expect(safe.queries.data).toEqual([{a: 1}])
+    })
+
     it('préserve null dans les tableaux', () => {
         const safe = toJsonSafe([1, undefined, () => 1]) as any[]
         expect(safe).toEqual([1, null, null])
