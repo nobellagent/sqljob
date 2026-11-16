@@ -18,7 +18,7 @@ function withTrailingSlash(url: string): string {
     return url.endsWith('/') ? url : `${url}/`
 }
 
-export interface BaseUrlInputs {
+interface BaseUrlInputs {
     /** `import.meta.url` du code en cours d'exécution. */
     moduleUrl?: string
     /** `window.location.href`. */
