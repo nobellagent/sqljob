@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.5.1 — 2026-11-16
+
+### Les exports chargent la version de l'instance, plus celle du projet d'origine
+
+L'export HTML écrivait en dur `https://ihatexcel.github.io/sqljob/dist-cdn/sqljob.js` : un fichier
+exporté depuis ce fork chargeait donc le déploiement amont, c'est-à-dire une version ancienne du
+code. La base est maintenant déduite du contexte (`src/lib/appBase.ts`) :
+
+- URL du module courant quand il est servi depuis un `dist-cdn/` (GitHub Pages, zip local, jsDelivr) ;
+- sinon dossier de la page, si elle est servie en http(s) ;
+- sinon déploiement canonique (`file://`, contexte inconnu) ;
+- surcharge possible par `localStorage["sqljob.export.baseUrl"]`.
+
+Même correction pour les liens de partage Gist (`generateSqljobUrl`) et le lien Documentation, qui
+pointaient aussi vers l'amont. Test de non-régression : `tests/app-base.test.ts`.
+
 ## 0.5.0 — 2026-11-15
 
 ### Plugins de cellule
