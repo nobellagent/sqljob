@@ -265,8 +265,15 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell, path, cellIndex})
         )
     }
 
+    const debugState = JSON.stringify({
+        rows: Array.isArray(cell._results) ? cell._results.length : 0,
+        queries: Object.keys(cell._pluginResults ?? {}).join(','),
+        status: (cell as any)._status ?? null,
+        info: cell._resultInfo ?? null,
+    })
+
     return (
-        <div className="flex flex-col min-h-0 flex-1">
+        <div className="flex flex-col min-h-0 flex-1" data-plugin-debug={debugState}>
             {showQueries && declaredQueries.length > 0 && (
                 <div className="flex flex-col gap-2 pb-2">
                     {declaredQueries.map(query => (
