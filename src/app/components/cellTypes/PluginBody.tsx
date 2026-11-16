@@ -29,6 +29,7 @@ import {
     type HostMethod,
 } from '../../../core/plugins/hostApi'
 import type {PluginManifest} from '../../../core/plugins/manifest'
+import {toJsonSafe} from '../../../core/plugins/jsonSafe'
 
 const HARNESS = `<!doctype html>
 <html><head><meta charset="utf-8">
@@ -131,14 +132,14 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell, path, cellIndex})
     const [ready, setReady] = useState(false)
     const [error, setError] = useState<string | null>(null)
 
-    const payload = useMemo(() => JSON.stringify({
+    const payload = useMemo(() => JSON.stringify(toJsonSafe({
         type: cell.type,
         cell: {id: cell.id, title: cell.title, name: cell.name, json: cell.json ?? {}},
         rows: cell._results ?? [],
         queries: cell._pluginResults ?? {},
         theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light',
         source: info?.source,
-    }), [cell.type, cell.id, cell.title, cell.name, cell.json, cell._results, cell._pluginResults, info?.source])
+    })), [cell.type, cell.id, cell.title, cell.name, cell.json, cell._results, cell._pluginResults, info?.source])
 
     // Appels hôte : contrôlés à chaque requête, jamais une fois pour toutes.
     async function handleRequest(method: HostMethod, params: Record<string, unknown> | undefined): Promise<unknown> {
