@@ -12,7 +12,7 @@
     "ui:download"
   ],
   "entry": "plugins/pdfme-plugin/pdfme-plugin.mjs",
-  "integrity": "sha256-Nr3GI3n0kGJBOpDzDTyqHRiEq7Eb1fVYDVgAoQWBt90=",
+  "integrity": "sha256-BOOCGas5GmV6HmPKbHu8PeJbFoc3WjMa2PPi5707wmI=",
   "cellTypes": [
     {
       "type": "pdfme-plugin",
