@@ -82,6 +82,21 @@ du JavaScript non confiné. Les permissions sont **vérifiées à chaque appel**
 elles ne bornent ni le CPU ni le réseau : un plugin peut toujours faire des requêtes sortantes et
 consommer de la mémoire. Voir `docs/plugins.md`.
 
+## Ce qui vient d'un CDN, ce qui est bundlé
+
+| Dépendance | Origine | Quand |
+|---|---|---|
+| DuckDB-WASM | jsDelivr, version épinglée (`DUCKDB_WASM_VERSION`) | au démarrage, 33 Mo de wasm |
+| Monaco | jsDelivr (`monaco-editor@0.55.1`) | à l'ouverture d'un éditeur SQL |
+| Perspective | jsDelivr, version épinglée (`4.1.0`) | à l'ouverture d'une cellule perspective |
+| pdfme + pdf-lib | **bundlé** dans `dist-cdn/` | au premier PDF généré (chunk ≈ 1,4 Mo compressé) |
+| Logo | raw.githubusercontent | au chargement |
+
+Règle : ce qui est lourd et versionné indépendamment (wasm DuckDB, Monaco, Perspective) reste sur
+jsDelivr ; ce qui fait partie du code applicatif (pdfme) est bundlé et chargé à la demande. Un
+export HTML charge donc pdfme depuis l'origine de l'application, pas depuis un CDN tiers — et le
+service worker ne le met en cache qu'après la première génération.
+
 ## Offline
 
 | Couche | Technologie | Contenu |

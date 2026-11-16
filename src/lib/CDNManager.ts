@@ -58,6 +58,11 @@ export class CDNManager {
                 (window as any).simpleDatatables = mod;
             }
 
+            /**
+             * pdfme n'est pas chargé depuis un CDN : les paquets sont bundlés au
+             * build et chargés à la demande dans un chunk propre (≈ 1,4 Mo
+             * compressé), servi par l'origine de l'application.
+             */
             static async loadPdfme() {
                 if ((window as any)._pdfmeModules) return (window as any)._pdfmeModules;
                 const [common, generator, schemas] = await Promise.all([

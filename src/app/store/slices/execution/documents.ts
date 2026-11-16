@@ -110,7 +110,7 @@ export function createDocuments(
         try {
             pdfme = await CDNManager.loadPdfme()
         } catch (loadErr) {
-            console.error('[pdfme] ERREUR chargement CDN:', loadErr)
+            console.error('[pdfme] ERREUR chargement du module:', loadErr)
             throw loadErr
         }
 
