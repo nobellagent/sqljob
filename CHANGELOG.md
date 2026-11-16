@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.7.1 — 2026-11-16
+
+### Deux bugs trouvés en testant le plugin pdfme en production
+
+- **Payload vide** : `toJsonSafe` utilisait un `WeakSet` partagé pour couper les cycles, et traitait
+  donc une valeur **partagée** (les lignes, présentes à la fois dans `rows` et dans `queries.data`)
+  comme un cycle : `queries` arrivait vide dans l'iframe alors que `rows` était rempli. Seuls les
+  ancêtres de la branche courante sont désormais suivis ; la valeur partagée est sérialisée deux fois.
+  Régression couverte par `tests/plugin-json-safe.test.ts`.
+- **Requêtes ignorées** : `executePluginCell` lisait les noms de requêtes dans le schéma du plugin.
+  Il part maintenant des `queries` de la cellule, qui sont la source de vérité, le schéma ne servant
+  que de repli. Un type de plugin sans schéma visible s'exécute donc quand même.
+
+Vérifié en production : cellule `pdfme-plugin`, template pdfme, `SELECT 'Bonjour pdfme' AS titre`,
+clic sur « Générer le PDF » → `export.pdf` de 3,8 Ko, `%PDF-1.7`, un champ texte de 13 glyphes.
+
 ## 0.7.0 — 2026-11-16
 
 ### Plugins interactifs, et pdfme en plugin
