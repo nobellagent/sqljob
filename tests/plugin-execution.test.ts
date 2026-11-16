@@ -86,6 +86,20 @@ describe('executePluginCell', () => {
         expect(cell._pluginResults).toEqual({})
     })
 
+    it('se fie aux requêtes de la cellule même sans schéma enregistré', async () => {
+        // Régression : le schéma d'un plugin peut ne pas être visible au moment
+        // de l'exécution ; la cellule reste la source de vérité.
+        delete (CELL_TYPE_SCHEMAS.types as any).demo
+        executeQuery.mockResolvedValue([{a: 1}])
+
+        const {handlers} = makeStore()
+        const cell: any = {type: 'demo', queries: [{name: 'data', sql: 'SELECT 1'}]}
+
+        await handlers.executePluginCell(cell)
+        expect(executeQuery).toHaveBeenCalledTimes(1)
+        expect(cell._pluginResults.data).toEqual([{a: 1}])
+    })
+
     it('propage l’erreur SQL pour que la cellule passe en erreur', async () => {
         executeQuery.mockRejectedValue(new Error('Binder Error: table inconnue'))
 
