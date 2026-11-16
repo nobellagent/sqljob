@@ -125,7 +125,8 @@ export function mount(root, context) {
             await context.host.download(name, base64, {mime: 'application/pdf', encoding: 'base64'})
             setStatus(`✅ ${name} (${inputs.length} page(s))`)
         } catch (error) {
-            setStatus(`❌ ${error && error.message ? error.message : String(error)}`)
+            const stack = String((error && error.stack) || '').split('\n').slice(1, 3).join(' ~ ')
+            setStatus(`❌ ${error && error.message ? error.message : String(error)} [${stack}]`)
         } finally {
             button.disabled = false
         }
