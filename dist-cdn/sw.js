@@ -2,9 +2,9 @@
  * Service worker sqljob — offline après la première visite.
  *
  * Stratégie : cache-first pour tout ce qui est same-origin et pour les CDN
- * réellement utilisés au runtime (jsDelivr : duckdb-wasm, monaco, pdfme ;
- * raw.githubusercontent : logo). Les chunks hashés du bundle CDN sont mis en
- * cache au fil de l'eau lors du premier chargement.
+ * réellement utilisés au runtime (jsDelivr : duckdb-wasm, monaco, perspective ;
+ * raw.githubusercontent : logo). Les chunks hashés du bundle sont mis en cache
+ * au fil de l'eau : pdfme, par exemple, n'est téléchargé qu'au premier PDF.
  *
  * Incrémenter CACHE_VERSION à chaque release pour purger l'ancien cache.
  */
