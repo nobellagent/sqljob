@@ -1,6 +1,6 @@
 {
   "schema": 1,
-  "updatedAt": "2026-11-15",
+  "updatedAt": "2026-11-16",
   "blocklist": [],
   "plugins": [
     {
@@ -16,8 +16,40 @@
         "ui:render"
       ],
       "entry": "plugins/hello-cell/hello-cell.mjs",
-      "integrity": "sha256-zt+okTzJ5yo2MtC4YJ12GyMNfL0TdOFeIHRRAfGvcOA=",
-      "size": 1353
+      "integrity": "sha256-EyX1s5k/hTVR7YS7OVGgdfUxl0NOpIC7Ix1P2K+hJls=",
+      "cellTypes": [
+        {
+          "type": "hello",
+          "title": "Hello",
+          "icon": "puzzle",
+          "queries": [
+            {
+              "key": "data",
+              "label": "Requête de données (facultative)"
+            }
+          ],
+          "schema": {
+            "salutation": {
+              "label": "Salutation",
+              "inputType": "text",
+              "placeholder": "Bonjour",
+              "default": "Bonjour"
+            },
+            "emoji": {
+              "label": "Emoji",
+              "inputType": "text",
+              "placeholder": "👋",
+              "default": "👋"
+            },
+            "compact": {
+              "label": "Affichage compact",
+              "inputType": "checkbox",
+              "default": false
+            }
+          }
+        }
+      ],
+      "size": 2282
     }
   ]
 }
