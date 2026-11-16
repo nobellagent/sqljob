@@ -109,7 +109,7 @@ window.addEventListener('message', async (event) => {
         host: window.sqljobHost,
       })
     }
-    parent.postMessage({kind: 'sqljob:plugin-rendered', ok: true, type: msg.type}, '*')
+    parent.postMessage({kind: 'sqljob:plugin-rendered', ok: true, type: msg.type, received: Object.keys(msg.queries || {}).join(',') + '/' + ((msg.rows && msg.rows.length) || 0), config: Object.keys(msg.config || {}).join(',')}, '*')
   } catch (error) {
     if (token !== seq) return
     root.textContent = ''
@@ -145,6 +145,7 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell, path, cellIndex})
     const frameRef = useRef<HTMLIFrameElement>(null)
     const [ready, setReady] = useState(false)
     const [error, setError] = useState<string | null>(null)
+    const [received, setReceived] = useState('?')
 
     const payload = useMemo(() => {
         // Les champs déclarés au manifeste sont des propriétés de la cellule :
@@ -228,6 +229,7 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell, path, cellIndex})
             if (data.kind === 'sqljob:plugin-ready') setReady(true)
             if (data.kind === 'sqljob:plugin-rendered') {
                 setError(data.ok ? null : String(data.error ?? 'erreur inconnue'))
+                setReceived(String(data.received ?? '?'))
             }
             if (data.kind !== 'sqljob:request') return
             if (event.source !== frameRef.current?.contentWindow) return
@@ -270,6 +272,7 @@ export const PluginBody: React.FC<CellBodyBaseProps> = ({cell, path, cellIndex})
         queries: Object.keys(cell._pluginResults ?? {}).join(','),
         status: (cell as any)._status ?? null,
         info: cell._resultInfo ?? null,
+        recu: received,
     })
 
     return (
